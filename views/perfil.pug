@@ -1,0 +1,23 @@
+extends layout 
+
+block content 
+    div#contenido
+        div#perfil 
+            div#datos-principales
+                div#imagen 
+                    img(src=usuario.foto_perfil, alt="/images/sin_foto_perfil.png", width="50")
+                div#datos
+                    h5= usuario.nombre 
+                    p= `Fecha de creación: ${usuario.fecha_creacion.toLocaleDateString()}`
+                div#descripcion 
+                p= usuario.descripcion 
+
+            div#seguidos-seguidores
+                h5= usuario.cantidad_seguidores 
+                h5= usuario.cantidad_seguidos 
+
+            div#publicaciones
+            div#seguidores
+            div#seguidos 
+
+    block footer

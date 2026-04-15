@@ -6,3 +6,7 @@ body {
 a {
   color: #00B7FF;
 }
+
+.publicacion {
+    scroll-margin-top: 80px; /* Ajusta este valor según el tamaño de tu cabecera/header */
+}

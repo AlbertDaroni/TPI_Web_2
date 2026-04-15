@@ -33,11 +33,7 @@ block content
     else
       p No hay publicaciones disponibles
 
-  footer(style="position:fixed; bottom:0; width:100%; border-top:1px solid #ccc; padding:10px;") 
-    nav 
-      a(href="/publicacion/agregar") ➕
-      a(href="/") 🏠 
-      a(href=`/perfil/${datos.perfil.id}`) Perfil
+  block footer
 
   script.
     // ACTUALIZAR LIKES

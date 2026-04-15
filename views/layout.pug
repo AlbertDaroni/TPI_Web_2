@@ -5,3 +5,9 @@ html
     link(rel='stylesheet', href='/stylesheets/style.css')
   body
     block content
+    block footer
+      footer(style="position:fixed; bottom:0; width:100%; border-top:1px solid #ccc; padding:10px;") 
+        nav 
+          a(href="/publicacion/agregar") ➕
+          a(href="/") 🏠 
+          a(href=`/perfil/${datos.perfil.id}`) Perfil

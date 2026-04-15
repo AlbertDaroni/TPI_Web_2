@@ -5,6 +5,13 @@ const controlador = require('../controller/controller');
 /* Página principal */
 router.get('/', controlador.contenidoPaginaPrincipal);
 
+/* Página de Registro */
+router.get('/registrarse', (req, res) => { res.render('registro'); });
+router.post('/registrarse', controlador.registrarUsuario);
+
+/* Validar */
+router.post('/validar/:id', controlador.validarUsuario);
+
 /* Ver publicación */
 router.get('/publicacion/:id', controlador.verPublicacion);
 

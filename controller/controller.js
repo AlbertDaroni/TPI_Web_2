@@ -4,6 +4,7 @@ const db = require('../config/db');
 async function contenidoPaginaPrincipal(req, res, next) {
     try {
         const publicaciones = await obtenerPublicaciones();
+
         const datos = await Promise.all(publicaciones.map(async (publicacion) => {
             const [
                 [imagenes],
@@ -33,49 +34,33 @@ async function contenidoPaginaPrincipal(req, res, next) {
 
         res.render('index', { datos: datos, perfil: perfil });
     } catch (error) { next(error); }
+}
 
-    async function obtenerPublicaciones() {
-        try {
-            const [publicaciones] = await db.query('SELECT * FROM publicaciones LIMIT 10');
-            return publicaciones;
-        } catch (error) { console.error('Error al obtener las publicaciones:', error); }
-    }
-    async function obtenerImagenes(id_publicacion) {
-        try {
-            const [imagenes] = await db.query('SELECT * FROM imagenes WHERE id_publicacion = ?', [id_publicacion]);
-            return imagenes;
-        } catch (error) { console.error('Error al obtener las imágenes:', error); }
-    }
-    async function obtenerUsuario(id_publicacion) {
-        try {
-            const [usuario] = await db.query('SELECT id, nombre, foto_perfil FROM usuarios WHERE id = (SELECT id_usuario FROM publicaciones WHERE id = ?)', [id_publicacion]);
-            return usuario[0];
-        } catch (error) { console.error('Error al obtener el usuario', error); }
-    }
-    async function obtenerUsuarioDeComentario(id_comentario) {
-        try {
-            const [usuarios] = await db.query('SELECT id, nombre, foto_perfil FROM usuarios WHERE id = (SELECT id_usuario FROM comentarios WHERE id = ?)', [id_comentario]);
-            return usuarios[0];
-        } catch (error) { console.error('Error al obtener los comentarios', error); }
-    }
-    async function obtenerComentarios(id_publicacion) {
-        try {
-            const [comentarios] = await db.query('SELECT * FROM comentarios WHERE id_publicacion = ?', [id_publicacion]);
-            return { comentarios, cantidad: comentarios.length };
-        } catch (error) { console.error('Error al obtener los comentarios', error); }
-    }
-    async function obtenerEtiquetas(id_publicacion) {
-        try {
-            const [etiquetas] = await db.query('SELECT * FROM etiquetas WHERE id_publicacion = ?', [id_publicacion]);
-            return etiquetas;
-        } catch (error) { console.error('Error al obtener las etiquetas', error); }
-    }
-    async function obtenerDenuncias(id_publicacion) {
-        try {
-            const [denuncias] = await db.query('SELECT * FROM denuncias WHERE id_publicacion = ?', [id_publicacion]);
-            return denuncias;
-        } catch (error) { console.error('Error al obtener las denuncias', error); }
-    }
+/* VALIDAR USUARIO -------------------------------------------------------------------------------------------------------- */
+
+/* REGISTRARSE ------------------------------------------------------------------------------------------------------------ */
+async function registrarUsuario(req, res, next) {
+    try {
+        const { nombre, email, contraseña } = req.body;
+        await db.query('INSERT INTO registros (email, contraseña) VALUES (?, ?)', [email, contraseña]);
+        const ultimoRegistro = await db.query('SELECT id FROM registros ORDER BY id DESC LIMIT 1');
+
+        await db.query(`INSERT INTO usuarios (nombre, foto_perfil, fecha_creacion, descripcion, cantidad_seguidores, cantidad_seguidos, seguidores, seguidos, id_registro)
+                        VALUES (?, null, NOW(), null, 0, 0, null, null, ?)`, [nombre, ultimoRegistro[0].id]);
+        const ultimoUsuario = await db.query('SELECT id FROM usuarios ORDER BY id DESC LIMIT 1');
+
+        res.redirect(`/perfil/${ultimoUsuario[0].id}`);
+    } catch (error) { next(error); }
+}
+
+/* VALIDAR ---------------------------------------------------------------------------------------------------------------- */
+async function validarUsuario(req, res, next) {
+    try {
+        const usuario = (await db.query('SELECT * FROM usuarios WHERE id = ?', [req.params.id]))[0];
+        const registro = (await db.query('SELECT * FROM registros WHERE id = (SELECT id_registro FROM usuarios WHERE id = ?)',[req.params.id]))[0];
+
+        (!usuario && !registro) ? res.render('/registrarse') : res.redirect('/');
+    } catch (error) { next(error); }
 }
 
 /* VER PUBLICACIÓN -------------------------------------------------------------------------------------------------------- */
@@ -100,10 +85,10 @@ async function actualizarLikes(req, res, next) {
 /* PERFIL ----------------------------------------------------------------------------------------------------------------- */
 async function perfil(req, res, next) {
     try {
-        const [usuario] = await db.query('SELECT * FROM usuarios WHERE id = ?', [req.params.id]);
-        if (usuario.length === 0) { return res.status(404).send('No se pudo acceder al perfil'); }
+        const usuario = (await db.query('SELECT * FROM usuarios WHERE id = ?', [req.params.id]))[0];
+        const [publicaciones] = await db.query('SELECT * FROM publicaciones WHERE id_usuario = ?', [req.params.id]);
 
-        res.render('perfil', { usuarios: usuario[0] });
+        res.render('perfil', { usuarios: usuario, publicaciones: publicaciones });
     } catch (error) { next(error); }
 }
 
@@ -119,7 +104,7 @@ async function denunciarPublicacion(req, res, next) {
 
         await db.query('UPDATE publicaciones SET denuncias = denuncias + 1 WHERE id = ?', [id_publicacion]);
         
-        res.redirect(`/publicacion/${id_publicacion}`);
+        res.redirect(`/#pub-${id_publicacion}`);
     } catch (error) { next(error); }
 }
 
@@ -135,7 +120,7 @@ async function denunciarComentario(req, res, next) {
 
         await db.query('UPDATE comentarios SET denuncias = denuncias + 1 WHERE id = ?', [id_comentario]);
 
-        res.redirect(`/publicacion/${id_publicacion}`);
+        res.redirect(`/#pub-${id_publicacion}`);
     } catch (error) { next(error); }
 }
 
@@ -186,7 +171,7 @@ async function agregarComentario(req, res, next) {
             INSERT INTO comentarios (comentario, fecha, id_publicacion, id_usuario)
             VALUES (?, NOW(), ?, ?)`, [comentario, id_publicacion, id_usuario]);
 
-        res.redirect(`/publicacion/${id_publicacion}`);
+        res.redirect(`/#pub-${id_publicacion}`);
     } catch (error) { next(error); }
 }
 
@@ -195,7 +180,7 @@ async function modificarComentario(req, res, next) {
     try {
         const comentario = req.body.comentario;
         await db.query('UPDATE comentarios SET comentario = ? WHERE id = ?', [comentario, req.params.id_comentario]);
-        res.redirect(`/publicacion/${req.params.id_publicacion}`);
+        res.redirect(`/pub-${req.params.id_publicacion}`);
     } catch (error) { next(error); }
 }
 
@@ -203,12 +188,100 @@ async function modificarComentario(req, res, next) {
 async function eliminarComentario(req, res, next) {
     try {
         await db.query('DELETE FROM comentarios WHERE id = ?', [req.params.id_comentario]);
-        res.redirect(`/publicacion/${req.params.id_publicacion}`);
+        res.redirect(`/pub-${req.params.id_publicacion}`);
     } catch (error) { next(error); }
+}
+
+/* DATOS GENERALES DE LAS PUBLICACIONES */
+async function obtenerDatosGeneralesPublicacion(tipo) {
+    let publicaciones;
+    switch (tipo) {
+        case "todas": publicaciones = await obtenerPublicaciones(); break;
+        case "masRelevantes": publicaciones = await obtenerPublicacionesMasRelevantes(); break;
+        case "menosRelevantes": publicaciones = await obtenerPublicacionesMenosRelevantes(); break;
+    }
+
+    const datos = await Promise.all(publicaciones.map(async (publicacion) => {
+        const [
+            [imagenes], usuario, [comentarios], cantidad, [etiquetas], [denuncias]
+        ] = await Promise.all([
+            obtenerImagenes(publicacion.id),
+            obtenerUsuario(publicacion.id),
+            obtenerComentarios(publicacion.id).comentarios,
+            obtenerComentarios(publicacion.id).cantidad,
+            obtenerEtiquetas(publicacion.id),
+            obtenerDenuncias(publicacion.id)
+        ]);
+
+        return { publicacion, imagenes, usuario, comentarios, cantidad, etiquetas, denuncias };
+    }));
+    
+    return datos;
+
+    async function obtenerPublicaciones() {
+        try {
+            const [publicaciones] = await db.query('SELECT * FROM publicaciones LIMIT 10');
+            return publicaciones;
+        } catch(error) { console.error('Error al obtener las publicaciones', error); }
+    }
+    async function obtenerPublicacionesMasRelevantes() {
+        try {
+            const [publicacionesMejorValorizadas] = await db.query('SELECT * FROM publicaciones ORDER BY likes DESC LIMIT 10');
+            return publicacionesMejorValorizadas;
+        } catch (error) { console.error('Error al obtener las publicaciones mejor valorizadas', error) }
+    }
+    async function obtenerPublicacionesMenosRelevantes() {
+        try {
+            const [publicacionesPeorValorizadas] = await db.query('SELECT * FROM publicaciones ORDER BY likes ASC LIMIT 10');
+            return publicacionesPeorValorizadas;
+        } catch (error) { console.error('Error al obtener las publicaciones peor valorizadas', error) }
+    }
+    async function obtenerImagenes(id_publicacion) {
+        try {
+            const [imagenes] = await db.query('SELECT * FROM imagenes WHERE id_publicacion = ?', [id_publicacion]);
+            return imagenes;
+        } catch (error) { console.error('Error al obtener las imágenes:', error); }
+    }
+    async function obtenerUsuario(id_publicacion) {
+        try {
+            const [usuario] = await db.query('SELECT id, nombre, foto_perfil FROM usuarios WHERE id = (SELECT id_usuario FROM publicaciones WHERE id = ?)', [id_publicacion]);
+            return usuario[0];
+        } catch (error) { console.error('Error al obtener el usuario', error); }
+    }
+    async function obtenerUsuarioDeComentario(id_comentario) {
+        try {
+            const [usuarios] = await db.query('SELECT id, nombre, foto_perfil FROM usuarios WHERE id = (SELECT id_usuario FROM comentarios WHERE id = ?)', [id_comentario]);
+            return usuarios[0];
+        } catch (error) { console.error('Error al obtener los comentarios', error); }
+    }
+    async function obtenerComentarios(id_publicacion) {
+        try {
+            const [comentarios] = await db.query('SELECT * FROM comentarios WHERE id_publicacion = ?', [id_publicacion]);
+            const comentariosCompletos = await Promise.all(comentarios.map(async (comentario) => {
+                comentario.id_usuario = (await obtenerUsuarioDeComentario(comentario.id));
+                return { comentario, usuario: comentario.id_usuario };
+            }));
+            return { comentarios: comentariosCompletos, cantidad: comentarios.length };
+        } catch (error) { console.error('Error al obtener los comentarios', error); }
+    }
+    async function obtenerEtiquetas(id_publicacion) {
+        try {
+            const [etiquetas] = await db.query('SELECT * FROM etiquetas WHERE id_publicacion = ?', [id_publicacion]);
+            return etiquetas;
+        } catch (error) { console.error('Error al obtener las etiquetas', error); }
+    }
+    async function obtenerDenuncias(id_publicacion) {
+        try {
+            const [denuncias] = await db.query('SELECT * FROM denuncias WHERE id_publicacion = ?', [id_publicacion]);
+            return denuncias;
+        } catch (error) { console.error('Error al obtener las denuncias', error); }
+    }
 }
 
 module.exports = {
     contenidoPaginaPrincipal,
+    registrarUsuario,
+    validarUsuario,
     verPublicacion,
     actualizarLikes,
     perfil,
