@@ -1,0 +1,102 @@
+extends layout
+
+block content
+  div#contenido
+    if datos && datos.length > 0
+      each dato in datos 
+        div.publicacion(id=`pub-${dato.publicacion.id}`)
+          div#perfil(onclick=`abrirPerfil(${dato.usuario.id})`)
+            img(src=dato.usuario.foto_perfil, alt="/images/sin_foto_perfil.png", width="40")
+            h5= dato.usuario.nombre
+
+          each imagen in dato.imagenes
+            img(src=imagen.imagen, alt="/images/sin_imagen.png")
+
+          div#informacion
+            h5= dato.publicacion.titulo
+            p= dato.publicacion.fecha.toLocaleDateString()
+            p= dato.publicacion.descripcion
+
+          div#acciones
+            button(onclick=`actualizarLikes(${dato.publicacion.id})`) ❤️
+              span(id=`likes-${dato.publicacion.id}`)= dato.publicacion.likes
+            button(onclick=`alternarComentarios(${dato.publicacion.id}, ${JSON.stringify(dato.comentarios)})`) 💬
+              span(id=`comentarios-${dato.publicacion.id}`)= dato.cantidad
+            button(onclick=`marcarInteres(${dato.publicacion.id})`) ⭐
+            a(href=`/publicacion/denunciar/${dato.publicacion.id}`) 🚩
+          
+          div.form-comentario
+            input(type="text", id=`input-coment-${dato.publicacion.id}`, placeholder="Escribí un comentario...")
+            button(onclick=`agregarComentario(${dato.publicacion.id})`) Comentar 
+
+          div(id=`lista-comentarios-${dato.publicacion.id}`)
+    else
+      p No hay publicaciones disponibles
+
+  footer(style="position:fixed; bottom:0; width:100%; border-top:1px solid #ccc; padding:10px;") 
+    nav 
+      a(href="/publicacion/agregar") ➕
+      a(href="/") 🏠 
+      a(href=`/perfil/${datos.perfil.id}`) Perfil
+
+  script.
+    // ACTUALIZAR LIKES
+    async function actualizarLikes(id) {
+      const res = await fetch(`/publicacion/like/${id}`, { method: 'POST' });
+      const data = await res.json();
+      document.getElementById(`likes-${id}`).innerText = data.likes;
+    }
+
+    // MOSTRAR / OCULTAR COMENTARIOS
+    function alternarComentarios(id, comentarios) {
+      const contenedor_comentarios = document.getElementById(`lista-comentarios-${id}`);
+
+      if (contenedor_comentarios.style.display === 'none') {
+        contenedor_comentarios.innerHTML = '';
+
+        comentarios.forEach(comentario => {
+          contenedor_comentarios.innerHTML += `
+            <img src="${comentario.id_usuario.foto_perfil}" alt="/images/sin_foto_perfil.png" width="40">
+            <h5>${comentario.id_usuario.nombre}</h5>
+            <p>${comentario.comentario}</p>
+          `;
+
+          contenedor_comentarios.appendChild(divComentario);
+        });
+        contenedor_comentarios.style.display = 'block';
+      } else {
+        contenedor_comentarios.style.display = 'none';
+      }
+    }
+
+    // AGREGAR COMENTARIO
+    async function agregarComentario(id) {
+      const texto = document.querySelector(`input-coment-${id}`).value;
+      if (!texto) return;
+
+      try {
+        const res = await fetch(`/publicacion/${id}/comentario/agregar`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ comentario: texto, id_usuario: perfil.id })
+        });
+
+        if (res.ok) location.reload();
+      } catch (error) { console.error('Error al agregar el comentario', error); }
+    }
+
+    // MODIFICAR COMENTARIO
+    async function modificarComentario(id_publicacion, id_comentario) {
+      try {
+        const contenedor_Comentarios = document.getElementById('comentarios');
+        contenedor_Comentarios.innerHTML = '';
+        } catch (error) { console.error('Error al modificar el comentario', error); }
+    }
+
+    // Esto hace que la página cargue más publicaciones
+    window.onscroll = function() {
+      if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight) {
+        console.log("Cargar más publicaciones...");
+        // Aquí llamarías a una ruta que devuelva JSON con las siguientes 10
+      }
+    };

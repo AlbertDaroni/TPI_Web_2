@@ -1,0 +1,18 @@
+extends layout 
+
+block content 
+    div#contenido
+        h3 Enviar una denuncia 
+        if (id_publicacion)
+            form(action=`/publicacion/denunciar/${id_publicacion}`, method="post") 
+                label(for="descripcion") Descripción 
+                textarea(name="descripcion", id="descripcion", rows="4", cols="50", required) 
+                button(type="submit") Enviar 
+        else if (id_comentario)
+            form(action=`/comentario/denunciar/${id_comentario}`, method="post") 
+                label(for="descripcion") Descripción 
+                textarea(name="descripcion", id="descripcion", rows="4", cols="50", required) 
+                button(type="submit") Enviar 
+        else
+            p No se ha encontrado el objeto a denunciar.
+    a(href=`/publicacion/${id_publicacion}`) Volver 
