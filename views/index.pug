@@ -6,11 +6,11 @@ block content
       each dato in datos 
         div.publicacion(id=`pub-${dato.publicacion.id}`)
           div#perfil(onclick=`abrirPerfil(${dato.usuario.id})`)
-            img(src=dato.usuario.foto_perfil, alt="/images/sin_foto_perfil.png", width="40")
+            img(src=dato.usuario.foto_perfil || "/images/sin_foto_perfil.png", width="40")
             h5= dato.usuario.nombre
 
           each imagen in dato.imagenes
-            img(src=imagen.imagen, alt="/images/sin_imagen.png")
+            img(src=imagen.imagen || "/images/sin_imagen.png")
 
           div#informacion
             h5= dato.publicacion.titulo

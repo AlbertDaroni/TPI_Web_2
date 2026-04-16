@@ -63,11 +63,49 @@ async function actualizarLikes(req, res, next) {
 /* PERFIL ----------------------------------------------------------------------------------------------------------------- */
 async function perfil(req, res, next) {
     try {
-        const [filas] = (await db.query('SELECT * FROM usuarios WHERE id = ?', [req.params.id]));
-        const [publicaciones] = await obtenerDatosGeneralesPublicacion("usuario", null, req.params.id, null);
+        const id_seguido = req.params.id;
+        const id_seguidor = req.session.userId;
 
-        res.render('perfil', { usuario: filas[0], publicaciones: publicaciones });
+        const [filas] = await db.query('SELECT * FROM usuarios WHERE id = ?', [id_seguido]);
+        const [publicaciones] = await obtenerDatosGeneralesPublicacion("usuario", null, id_seguido, null);
+        const [verificacion] = await db.query('SELECT * FROM seguidores WHERE id_seguidor = ? AND id_seguido = ?', [id_seguidor, id_seguido]);
+        const [[seguidos]] = await db.query('SELECT COUNT(*) FROM seguidores WHERE id_seguidor = ?', [id_seguido]);
+        const [[seguidores]] = await db.query('SELECT COUNT(*) FROM seguidores WHERE id_seguido = ?', [id_seguido]);
+
+        res.render('perfil', {
+            usuario: filas[0],
+            publicaciones: publicaciones,
+            seguidos: seguidos,
+            seguidores: seguidores,
+            loSigo: verificacion.length > 0,
+            esMiPerfil: id_seguidor == id_seguido,
+            id: id_seguidor
+        });
     } catch (error) { next(error); }
+}
+
+/* MODIFICAR USUARIO ------------------------------------------------------------------------------------------------------ */
+async function modificarUsuario(req, res, next) {
+    try {
+        const id = req.session.userId;
+        if (req.method === 'GET') {
+            const [filas] = await db.query('SELECT * FROM usuarios WHERE id = ?', id);
+            res.render('modificar', { usuario: filas[0], id: id });
+        } else {
+            const { nombre, email, contraseña, descripcion } = req.body;
+            const [usuarioActual] = await db.query('SELECT foto_perfil FROM usuarios WHERE id = ?', [id]);
+            const foto_perfil = req.file ? `/uploads/${req.file.filename}` : usuarioActual[0].foto_perfil;
+
+            await db.query(`UPDATE usuarios SET foto_perfil = ?, nombre = ?, email = ?, contraseña = ?, descripcion = ? WHERE id = ?`,
+                [foto_perfil, nombre, email, contraseña, descripcion, id]
+            );
+
+            res.redirect(`/perfil/${id}`);
+        }
+    } catch (error) {
+        if (error.errno === 1062) return res.render('modificar', { error: 'Nombre en uso' });
+        next(error);
+    }
 }
 
 /* DENUNCIAR PUBLICACIÓN -------------------------------------------------------------------------------------------------- */
@@ -171,6 +209,40 @@ async function eliminarComentario(req, res, next) {
     } catch (error) { next(error); }
 }
 
+/* VER SEGUIDOS ----------------------------------------------------------------------------------------------------------- */
+async function verSeguidos(req, res, next) {
+    try {
+        const [filas] = await db.query('SELECT seguidos FROM usuarios WHERE id = ?', [req.params.id]);
+        res.render('seguidos_seguidores', { seguidos: filas, usuario: req.params.id });
+    } catch (error) { next(error); }
+}
+
+/* VER SEGUIDORES --------------------------------------------------------------------------------------------------------- */
+async function verSeguidores(req, res, next) {
+    try {
+        const [filas] = await db.query('SELECT seguidores FROM usuarios WHERE id = ?', [req.params.id]);
+        res.render('seguidos_seguidores', { seguidores: filas, usuario: req.params.id });
+    } catch (error) { next(error); }
+}
+
+/* SEGUIR / DEJAR DE SEGUIR ----------------------------------------------------------------------------------------------- */
+async function alternarSeguimiento() {
+    try {
+        const id_seguidor = req.session.userId;
+        const id_seguido = req.params.id;
+
+        const [existe] = await db.query('SELECT * FROM seguidores WHERE id_seguidor = ? AND id_seguido = ?', [id_seguidor, id_seguido]);
+
+        if (existe.length > 0 ) {
+            await db.query('DELETE FROM seguidores WHERE id_seguidor = ? AND id_seguido = ?', [id_seguidor, id_seguido]);
+        } else {
+            await db.query('INSERT INTO seguidores(id_seguidor, id_seguido) VALUES(?, ?)', [id_seguidor, id_seguido]);
+        }
+
+        res.redirect(`/perfil/${id_seguido}`);
+    } catch (error) { next(error); }
+}
+
 /* DATOS GENERALES DE LAS PUBLICACIONES */
 async function obtenerDatosGeneralesPublicacion(tipo, nombre, id_usuario, id_publicacion) {
     let publicaciones;
@@ -184,7 +256,7 @@ async function obtenerDatosGeneralesPublicacion(tipo, nombre, id_usuario, id_pub
     }
 
     const datos = await Promise.all(publicaciones.map(async (publicacion) => {
-        const [imagenes, usuario, infoComentarios, cantidad, etiquetas, denuncias] = await Promise.all([
+        const [imagenes, usuario, infoComentarios, etiquetas, denuncias] = await Promise.all([
             obtenerImagenes(publicacion.id),
             obtenerUsuario(publicacion.id),
             obtenerComentarios(publicacion.id),
@@ -281,11 +353,15 @@ module.exports = {
     verPublicacion,
     actualizarLikes,
     perfil,
+    modificarUsuario,
     denunciarPublicacion,
     denunciarComentario,
     crearPublicacion,
     eliminarPublicacion,
     agregarComentario,
     modificarComentario,
-    eliminarComentario
+    eliminarComentario,
+    verSeguidos,
+    verSeguidores,
+    alternarSeguimiento
 };

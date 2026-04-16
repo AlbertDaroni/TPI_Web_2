@@ -10,3 +10,42 @@ a {
 .publicacion {
     scroll-margin-top: 80px; /* Ajusta este valor según el tamaño de tu cabecera/header */
 }
+/* Contenedor de fotos tipo Instagram */
+#publicaciones {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); /* 3 columnas iguales */
+    gap: 5px;
+    margin-top: 20px;
+}
+
+#publicaciones .publicacion {
+    aspect-ratio: 1 / 1; /* Cuadradas */
+    overflow: hidden;
+}
+
+#publicaciones img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Recorta la imagen para llenar el cuadrado */
+}
+
+/* Cabecera del Perfil */
+#datos-principales {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+    padding: 20px;
+}
+
+#imagen img {
+    border-radius: 50%; /* Foto circular */
+    border: 1px solid #dbdbdb;
+}
+
+#seguidos-seguidores {
+    display: flex;
+    gap: 20px;
+    justify-content: space-around;
+    border-top: 1px solid #efefef;
+    padding: 10px 0;
+}

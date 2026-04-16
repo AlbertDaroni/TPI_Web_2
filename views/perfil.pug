@@ -5,21 +5,33 @@ block content
         div#perfil 
             div#datos-principales
                 div#imagen 
-                    img(src=usuario.foto_perfil, alt="/images/sin_foto_perfil.png", width="50")
+                    img(src=usuario.foto_perfil || "/images/sin_foto_perfil.png", width="50")
                 div#datos
                     h5= usuario.nombre 
                     p= `Fecha de creación: ${usuario.fecha_creacion.toLocaleDateString()}`
-                    a(href="/cerrar-sesion") Cerrar sesión
+                    if (esMiPerfil)
+                        a(href=`/usuario/${id}/modificar`) Modificar
+                        a(href="/cerrar-sesion") Cerrar sesión
                 div#descripcion 
                 p= usuario.descripcion 
+                
+                if (!esMiPerfil)
+                    form(action=`/perfil/seguir/${usuario.id}`, method="post") 
+                        if (loSigo)
+                            button(type="submit") Dejar de seguir
+                        else 
+                            button(type="submit") Seguir
 
             div#seguidos-seguidores
-                h5= usuario.cantidad_seguidores 
-                h5= usuario.cantidad_seguidos 
+                h5= seguidores.length 
+                    span Seguidores
+                h5= seguidos.length 
+                    span Seguidos
 
             div#lista-seguidos-seguidores
                 a(href=`/usuario/${usuario.id}/seguidos`) Seguidos
                 a(href=`/usuario/${usuario.id}/seguidores`) Seguidores
+
             div#publicaciones
                 if publicaciones && publicaciones.length > 0
                     each publicacion in publicaciones 
@@ -30,6 +42,7 @@ block content
 
                             each imagen in publicacion.imagenes
                                 img(src=imagen.imagen, alt="/images/sin_imagen.png")
+                                p= imagen.licencia
 
                             div#informacion
                                 h5= publicacion.titulo
@@ -37,9 +50,18 @@ block content
                                 p= publicacion.descripcion
 
                             div#acciones
-                                button(type="button") ❤️
-                                span(id=`likes-${publicacion.id}`)= publicacion.likes
-                                button(onclick=`alternarComentarios(${publicacion.id}, ${JSON.stringify(publicacion.comentarios)})`) 💬
+                                if (!esMiPerfil)
+                                    button(onclick=`actualizarLikes(${publicacion.id})`) ❤️
+                                        span(id=`likes-${publicacion.id}`)= publicacion.publicacion.likes
+                                    button(onclick=`alternarComentarios(${publicacion.id}, ${JSON.stringify(publicacion.comentarios)})`) 💬
+                                        span(id=`comentarios-${publicacion.id}`)= publicacion.cantidad
+                                    button(onclick=`marcarInteres(${publicacion.id})`) ⭐
+                                    a(href=`/publicacion/denunciar/${publicacion.id}`) 🚩
+                                else
+                                    button(type="button") ❤️
+                                        span(id=`likes-${publicacion.id}`)= dato.publicacion.likes
+                                    button(onclick=`alternarComentarios(${publicacion.id}, ${JSON.stringify(publicacion.comentarios)})`) 💬
+                                        span(id=`comentarios-${publicacion.id}`)= publicacion.cantidad
                             
                             div.form-comentario
                                 input(type="text", id=`input-coment-${publicacion.id}`, placeholder="Escribí un comentario...")
@@ -53,8 +75,8 @@ block content
         nav 
             a(href="/publicacion/agregar") ➕
             a(href="/") 🏠 
-            a(href=`/perfil/usuario/${usuario.id}`) Perfil
-    
+            a(href=`/perfil/usuario/${id}`) Perfil
+
     script.
         // ACTUALIZAR LIKES
         async function actualizarLikes(id) {
@@ -94,7 +116,7 @@ block content
                 const res = await fetch(`/publicacion/${id}/comentario/agregar`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ comentario: texto, id_usuario: usuario.id })
+                body: JSON.stringify({ comentario: texto, id_usuario: id })
                 });
 
                 if (res.ok) location.reload();
@@ -106,13 +128,5 @@ block content
             try {
                 const contenedor_Comentarios = document.getElementById('comentarios');
                 contenedor_Comentarios.innerHTML = '';
-                } catch (error) { console.error('Error al modificar el comentario', error); }
-            }
-
-            // Esto hace que la página cargue más publicaciones
-            window.onscroll = function() {
-            if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight) {
-                console.log("Cargar más publicaciones...");
-                // Aquí llamarías a una ruta que devuelva JSON con las siguientes 10
-            }
-        };
+            } catch (error) { console.error('Error al modificar el comentario', error); }
+        }
