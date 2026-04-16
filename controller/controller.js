@@ -3,63 +3,47 @@ const db = require('../config/db');
 /* CONTENIDO DE LA PÁGINA PRINCIPAL --------------------------------------------------------------------------------------- */
 async function contenidoPaginaPrincipal(req, res, next) {
     try {
-        const publicaciones = await obtenerPublicaciones();
+        let publicaciones = [];
+        const publicacionesMasRelevantes = await obtenerDatosGeneralesPublicacion('masRelevantes');
+        const publicacionesMenosRelevantes = await obtenerDatosGeneralesPublicacion('menosRelevantes');
 
-        const datos = await Promise.all(publicaciones.map(async (publicacion) => {
-            const [
-                [imagenes],
-                usuario,
-                [comentarios],
-                cantidad,
-                [etiquetas],
-                [denuncias]
-            ] = await Promise.all([
-                obtenerImagenes(publicacion.id),
-                obtenerUsuario(publicacion.id),
-                obtenerComentarios(publicacion.id).comentarios,
-                obtenerComentarios(publicacion.id).cantidad,
-                obtenerEtiquetas(publicacion.id),
-                obtenerDenuncias(publicacion.id)
-            ]);
-            
-            const comentariosCompletos = await Promise.all(comentarios.map(async (comentario) => {
-                comentario.id_usuario = (await obtenerUsuarioDeComentario(comentario.id));
-                return { comentario, usuario: comentario.id_usuario };
-            }));
+        publicaciones.push(...publicacionesMasRelevantes, ...publicacionesMenosRelevantes);
 
-            return { publicacion, imagenes, usuario, comentarios: comentariosCompletos, cantidad, etiquetas, denuncias };
-        }));
+        const perfil = (await db.query('SELECT * FROM usuarios WHERE id = ?', [req.session.userId]))[0];
 
-        const perfil = (await db.query('SELECT * FROM usuarios LIMIT 1'))[0]; // Esto debe cambiarse. El perfil debe venir en los parámetros
-
-        res.render('index', { datos: datos, perfil: perfil });
+        res.render('index', { datos: publicaciones, perfil: perfil });
     } catch (error) { next(error); }
 }
-
-/* VALIDAR USUARIO -------------------------------------------------------------------------------------------------------- */
 
 /* REGISTRARSE ------------------------------------------------------------------------------------------------------------ */
 async function registrarUsuario(req, res, next) {
     try {
         const { nombre, email, contraseña } = req.body;
-        await db.query('INSERT INTO registros (email, contraseña) VALUES (?, ?)', [email, contraseña]);
-        const ultimoRegistro = await db.query('SELECT id FROM registros ORDER BY id DESC LIMIT 1');
 
-        await db.query(`INSERT INTO usuarios (nombre, foto_perfil, fecha_creacion, descripcion, cantidad_seguidores, cantidad_seguidos, seguidores, seguidos, id_registro)
-                        VALUES (?, null, NOW(), null, 0, 0, null, null, ?)`, [nombre, ultimoRegistro[0].id]);
-        const ultimoUsuario = await db.query('SELECT id FROM usuarios ORDER BY id DESC LIMIT 1');
+        const nuevoUsuario = await db.query(`
+            INSERT INTO usuarios (nombre, foto_perfil, email, contraseña, fecha_creacion, descripcion, cantidad_seguidores, cantidad_seguidos, seguidores, seguidos)
+            VALUES (?, null, ?, ?, NOW(), null, 0, 0, null, null)`, [nombre, email, contraseña]
+        );
 
-        res.redirect(`/perfil/${ultimoUsuario[0].id}`);
-    } catch (error) { next(error); }
+        req.session.userId = nuevoUsuario.insertId;
+        res.redirect('/');
+    } catch (error) {
+        if (error.errno === 1062) return res.render('/registro', { error: 'Nombre en uso' });
+        next(error);
+    }
 }
 
-/* VALIDAR ---------------------------------------------------------------------------------------------------------------- */
-async function validarUsuario(req, res, next) {
+/* INGRESAR --------------------------------------------------------------------------------------------------------------- */
+async function ingresar(req, res, next) {
     try {
-        const usuario = (await db.query('SELECT * FROM usuarios WHERE id = ?', [req.params.id]))[0];
-        const registro = (await db.query('SELECT * FROM registros WHERE id = (SELECT id_registro FROM usuarios WHERE id = ?)',[req.params.id]))[0];
+        const { nombre, email, contraseña } = req.body;
+        const usuario = (await db.query('SELECT id, nombre, email, contraseña FROM usuarios WHERE nombre = ? AND email = ? AND contraseña = ?',
+            [nombre, email, contraseña]))[0];
 
-        (!usuario && !registro) ? res.render('/registrarse') : res.redirect('/');
+        if (usuario) {
+            req.session.userId = usuario.id;
+            res.redirect('/');
+        } else { res.render('ingreso', { error: 'Credenciales inválidas'}); }
     } catch (error) { next(error); }
 }
 
@@ -86,7 +70,7 @@ async function actualizarLikes(req, res, next) {
 async function perfil(req, res, next) {
     try {
         const usuario = (await db.query('SELECT * FROM usuarios WHERE id = ?', [req.params.id]))[0];
-        const [publicaciones] = await db.query('SELECT * FROM publicaciones WHERE id_usuario = ?', [req.params.id]);
+        const [publicaciones] = await obtenerDatosGeneralesPublicacion("usuario", null, req.params.id, null);
 
         res.render('perfil', { usuarios: usuario, publicaciones: publicaciones });
     } catch (error) { next(error); }
@@ -145,7 +129,7 @@ async function crearPublicacion(req, res, next) {
             VALUES (?, ?)`, [id_publicacion, usuario.id]);
         }
 
-        res.redirect('/');
+        res.redirect('/publicacion/agregar');
     } catch (error) { next(error); }
 }
 
@@ -180,7 +164,7 @@ async function modificarComentario(req, res, next) {
     try {
         const comentario = req.body.comentario;
         await db.query('UPDATE comentarios SET comentario = ? WHERE id = ?', [comentario, req.params.id_comentario]);
-        res.redirect(`/pub-${req.params.id_publicacion}`);
+        res.redirect(`/#pub-${req.params.id_publicacion}`);
     } catch (error) { next(error); }
 }
 
@@ -188,17 +172,20 @@ async function modificarComentario(req, res, next) {
 async function eliminarComentario(req, res, next) {
     try {
         await db.query('DELETE FROM comentarios WHERE id = ?', [req.params.id_comentario]);
-        res.redirect(`/pub-${req.params.id_publicacion}`);
+        res.redirect(`/#pub-${req.params.id_publicacion}`);
     } catch (error) { next(error); }
 }
 
 /* DATOS GENERALES DE LAS PUBLICACIONES */
-async function obtenerDatosGeneralesPublicacion(tipo) {
+async function obtenerDatosGeneralesPublicacion(tipo, nombre, id_usuario, id_publicacion) {
     let publicaciones;
     switch (tipo) {
         case "todas": publicaciones = await obtenerPublicaciones(); break;
+        case "usuario": publicaciones = await obtenerPublicacionesDeUnUsuario(id_usuario); break;
+        case "favoritas": publicaciones = await obtenerPublicacionesFavoritas(nombre, id_usuario, id_publicacion); break;
         case "masRelevantes": publicaciones = await obtenerPublicacionesMasRelevantes(); break;
         case "menosRelevantes": publicaciones = await obtenerPublicacionesMenosRelevantes(); break;
+        default: return;
     }
 
     const datos = await Promise.all(publicaciones.map(async (publicacion) => {
@@ -226,15 +213,28 @@ async function obtenerDatosGeneralesPublicacion(tipo) {
     }
     async function obtenerPublicacionesMasRelevantes() {
         try {
-            const [publicacionesMejorValorizadas] = await db.query('SELECT * FROM publicaciones ORDER BY likes DESC LIMIT 10');
-            return publicacionesMejorValorizadas;
+            const [publicaciones] = await db.query('SELECT * FROM publicaciones ORDER BY likes DESC LIMIT 10');
+            return publicaciones;
         } catch (error) { console.error('Error al obtener las publicaciones mejor valorizadas', error) }
     }
     async function obtenerPublicacionesMenosRelevantes() {
         try {
-            const [publicacionesPeorValorizadas] = await db.query('SELECT * FROM publicaciones ORDER BY likes ASC LIMIT 10');
-            return publicacionesPeorValorizadas;
+            const [publicaciones] = await db.query('SELECT * FROM publicaciones ORDER BY likes ASC LIMIT 10');
+            return publicaciones;
         } catch (error) { console.error('Error al obtener las publicaciones peor valorizadas', error) }
+    }
+    async function obtenerPublicacionesDeUnUsuario(id_usuario) {
+        try {
+            const [publicaciones] = await db.query('SELECT * FROM publicaciones WHERE id_usuario = ?', [id_usuario]);
+            return publicaciones;
+        } catch (error) { console.error('Error al obtener las publicaciones de un usuario', error) }
+    }
+    async function obtenerPublicacionesFavoritas(nombre, id_usuario, id_publicacion) {
+        try {
+            const [publicaciones] = await db.query('SELECT * FROM favoritos WHERE nombre = ? AND id_usuario = ? AND id_publicacion = ?',
+                [nombre, id_usuario, id_publicacion]);
+            return publicaciones;
+        } catch (error) { console.error('Error al obtener las publicaciones favoritas', error) }
     }
     async function obtenerImagenes(id_publicacion) {
         try {
@@ -281,7 +281,6 @@ async function obtenerDatosGeneralesPublicacion(tipo) {
 module.exports = {
     contenidoPaginaPrincipal,
     registrarUsuario,
-    validarUsuario,
     verPublicacion,
     actualizarLikes,
     perfil,

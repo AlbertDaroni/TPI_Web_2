@@ -9,6 +9,7 @@ block content
                 div#datos
                     h5= usuario.nombre 
                     p= `Fecha de creación: ${usuario.fecha_creacion.toLocaleDateString()}`
+                    a(href="/cerrar-sesion") Cerrar sesión
                 div#descripcion 
                 p= usuario.descripcion 
 
