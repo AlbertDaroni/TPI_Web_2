@@ -32,7 +32,7 @@ router.get('/publicacion/:id', controlador.verPublicacion);
 router.post('/publicacion/like/:id', controlador.actualizarLikes);
 
 /* Perfil */
-router.get('/perfil/:id', controlador.perfil);
+router.get('/perfil/usuario/:id', controlador.perfil);
 
 /* Denunciar publicación */
 router.get('/publicacion/denunciar/:id', (req, res) => { res.render('denuncia', { id_publicacion: req.params.id }); });

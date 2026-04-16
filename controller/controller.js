@@ -3,15 +3,9 @@ const db = require('../config/db');
 /* CONTENIDO DE LA PÁGINA PRINCIPAL --------------------------------------------------------------------------------------- */
 async function contenidoPaginaPrincipal(req, res, next) {
     try {
-        let publicaciones = [];
-        const publicacionesMasRelevantes = await obtenerDatosGeneralesPublicacion('masRelevantes');
-        const publicacionesMenosRelevantes = await obtenerDatosGeneralesPublicacion('menosRelevantes');
-
-        publicaciones.push(...publicacionesMasRelevantes, ...publicacionesMenosRelevantes);
-
-        const perfil = (await db.query('SELECT * FROM usuarios WHERE id = ?', [req.session.userId]))[0];
-
-        res.render('index', { datos: publicaciones, perfil: perfil });
+        const publicaciones = await obtenerDatosGeneralesPublicacion("todas", null, null, null);
+        const [filas] = (await db.query('SELECT * FROM usuarios WHERE id = ?', [req.session.userId]));
+        res.render('index', { datos: publicaciones, usuario: filas[0] });
     } catch (error) { next(error); }
 }
 
@@ -20,15 +14,15 @@ async function registrarUsuario(req, res, next) {
     try {
         const { nombre, email, contraseña } = req.body;
 
-        const nuevoUsuario = await db.query(`
+        const [filas] = (await db.query(`
             INSERT INTO usuarios (nombre, foto_perfil, email, contraseña, fecha_creacion, descripcion, cantidad_seguidores, cantidad_seguidos, seguidores, seguidos)
             VALUES (?, null, ?, ?, NOW(), null, 0, 0, null, null)`, [nombre, email, contraseña]
-        );
+        ));
 
-        req.session.userId = nuevoUsuario.insertId;
+        req.session.userId = filas.insertId;
         res.redirect('/');
     } catch (error) {
-        if (error.errno === 1062) return res.render('/registro', { error: 'Nombre en uso' });
+        if (error.errno === 1062) return res.render('registro', { error: 'Nombre en uso' });
         next(error);
     }
 }
@@ -37,11 +31,11 @@ async function registrarUsuario(req, res, next) {
 async function ingresar(req, res, next) {
     try {
         const { nombre, email, contraseña } = req.body;
-        const usuario = (await db.query('SELECT id, nombre, email, contraseña FROM usuarios WHERE nombre = ? AND email = ? AND contraseña = ?',
-            [nombre, email, contraseña]))[0];
-
-        if (usuario) {
-            req.session.userId = usuario.id;
+        const [filas] = (await db.query('SELECT id, nombre, email, contraseña FROM usuarios WHERE nombre = ? AND email = ? AND contraseña = ?',
+            [nombre, email, contraseña]));
+        
+        if (filas.length > 0) {
+            req.session.userId = filas[0].id;
             res.redirect('/');
         } else { res.render('ingreso', { error: 'Credenciales inválidas'}); }
     } catch (error) { next(error); }
@@ -50,10 +44,10 @@ async function ingresar(req, res, next) {
 /* VER PUBLICACIÓN -------------------------------------------------------------------------------------------------------- */
 async function verPublicacion(req, res, next) {
     try {
-        const [rows] = await db.query('SELECT * FROM publicaciones WHERE id = ?', [req.params.id]);
-        if (rows.length === 0) { return res.status(404).send('Publicación no encontrada'); }
+        const [filas] = await db.query('SELECT * FROM publicaciones WHERE id = ?', [req.params.id]);
+        if (filas.length === 0) { return res.status(404).send('Publicación no encontrada'); }
 
-        res.render('publicacion', { publicacion: rows[0] });
+        res.render('publicacion', { publicacion: filas[0] });
     } catch (error) { next(error); }
 }
 
@@ -61,18 +55,18 @@ async function verPublicacion(req, res, next) {
 async function actualizarLikes(req, res, next) {
     try {
         await db.query('UPDATE publicaciones SET likes = likes + 1 WHERE id = ?', [req.params.id]);
-        const [rows] = await db.query('SELECT * FROM publicaciones WHERE id = ?', [req.params.id]);
-        res.json({ likes: rows[0].likes });
+        const [filas] = await db.query('SELECT * FROM publicaciones WHERE id = ?', [req.params.id]);
+        res.json({ likes: filas[0].likes });
     } catch (error) { next(error); }
 }
 
 /* PERFIL ----------------------------------------------------------------------------------------------------------------- */
 async function perfil(req, res, next) {
     try {
-        const usuario = (await db.query('SELECT * FROM usuarios WHERE id = ?', [req.params.id]))[0];
+        const [filas] = (await db.query('SELECT * FROM usuarios WHERE id = ?', [req.params.id]));
         const [publicaciones] = await obtenerDatosGeneralesPublicacion("usuario", null, req.params.id, null);
 
-        res.render('perfil', { usuarios: usuario, publicaciones: publicaciones });
+        res.render('perfil', { usuario: filas[0], publicaciones: publicaciones });
     } catch (error) { next(error); }
 }
 
@@ -129,7 +123,7 @@ async function crearPublicacion(req, res, next) {
             VALUES (?, ?)`, [id_publicacion, usuario.id]);
         }
 
-        res.redirect('/publicacion/agregar');
+        res.redirect('/');
     } catch (error) { next(error); }
 }
 
@@ -149,7 +143,7 @@ async function eliminarPublicacion(req, res, next) {
 async function agregarComentario(req, res, next) {
     try {
         const { comentario, id_usuario } = req.body;
-        const id_publicacion = req.params.id_publicacion;
+        const id_publicacion = req.params.id;
 
         await db.query(`
             INSERT INTO comentarios (comentario, fecha, id_publicacion, id_usuario)
@@ -162,9 +156,10 @@ async function agregarComentario(req, res, next) {
 /* MODIFICAR COMENTARIO */
 async function modificarComentario(req, res, next) {
     try {
+        const { id_publicacion, id_comentario} = req.params;
         const comentario = req.body.comentario;
-        await db.query('UPDATE comentarios SET comentario = ? WHERE id = ?', [comentario, req.params.id_comentario]);
-        res.redirect(`/#pub-${req.params.id_publicacion}`);
+        await db.query('UPDATE comentarios SET comentario = ? WHERE id = ?', [comentario, id_comentario]);
+        res.redirect(`/#pub-${id_publicacion}`);
     } catch (error) { next(error); }
 }
 
@@ -189,37 +184,38 @@ async function obtenerDatosGeneralesPublicacion(tipo, nombre, id_usuario, id_pub
     }
 
     const datos = await Promise.all(publicaciones.map(async (publicacion) => {
-        const [
-            [imagenes], usuario, [comentarios], cantidad, [etiquetas], [denuncias]
-        ] = await Promise.all([
+        const [imagenes, usuario, infoComentarios, cantidad, etiquetas, denuncias] = await Promise.all([
             obtenerImagenes(publicacion.id),
             obtenerUsuario(publicacion.id),
-            obtenerComentarios(publicacion.id).comentarios,
-            obtenerComentarios(publicacion.id).cantidad,
+            obtenerComentarios(publicacion.id),
             obtenerEtiquetas(publicacion.id),
             obtenerDenuncias(publicacion.id)
         ]);
 
-        return { publicacion, imagenes, usuario, comentarios, cantidad, etiquetas, denuncias };
+        return {
+            publicacion, imagenes, usuario,
+            comentarios: infoComentarios.comentarios, cantidad: infoComentarios.cantidad, 
+            etiquetas, denuncias
+        };
     }));
     
     return datos;
 
     async function obtenerPublicaciones() {
         try {
-            const [publicaciones] = await db.query('SELECT * FROM publicaciones LIMIT 10');
+            const [publicaciones] = await db.query('SELECT * FROM publicaciones ORDER BY RAND() LIMIT 10');
             return publicaciones;
         } catch(error) { console.error('Error al obtener las publicaciones', error); }
     }
     async function obtenerPublicacionesMasRelevantes() {
         try {
-            const [publicaciones] = await db.query('SELECT * FROM publicaciones ORDER BY likes DESC LIMIT 10');
+            const [publicaciones] = await db.query('SELECT * FROM publicaciones ORDER BY likes, RAND() DESC LIMIT 10');
             return publicaciones;
         } catch (error) { console.error('Error al obtener las publicaciones mejor valorizadas', error) }
     }
     async function obtenerPublicacionesMenosRelevantes() {
         try {
-            const [publicaciones] = await db.query('SELECT * FROM publicaciones ORDER BY likes ASC LIMIT 10');
+            const [publicaciones] = await db.query('SELECT * FROM publicaciones ORDER BY likes, RAND() ASC LIMIT 10');
             return publicaciones;
         } catch (error) { console.error('Error al obtener las publicaciones peor valorizadas', error) }
     }
@@ -258,8 +254,8 @@ async function obtenerDatosGeneralesPublicacion(tipo, nombre, id_usuario, id_pub
         try {
             const [comentarios] = await db.query('SELECT * FROM comentarios WHERE id_publicacion = ?', [id_publicacion]);
             const comentariosCompletos = await Promise.all(comentarios.map(async (comentario) => {
-                comentario.id_usuario = (await obtenerUsuarioDeComentario(comentario.id));
-                return { comentario, usuario: comentario.id_usuario };
+                const usuario = await obtenerUsuarioDeComentario(comentario.id);
+                return { ...comentario, usuario: usuario };
             }));
             return { comentarios: comentariosCompletos, cantidad: comentarios.length };
         } catch (error) { console.error('Error al obtener los comentarios', error); }
@@ -281,6 +277,7 @@ async function obtenerDatosGeneralesPublicacion(tipo, nombre, id_usuario, id_pub
 module.exports = {
     contenidoPaginaPrincipal,
     registrarUsuario,
+    ingresar,
     verPublicacion,
     actualizarLikes,
     perfil,

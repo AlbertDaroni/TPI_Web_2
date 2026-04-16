@@ -17,8 +17,102 @@ block content
                 h5= usuario.cantidad_seguidores 
                 h5= usuario.cantidad_seguidos 
 
+            div#lista-seguidos-seguidores
+                a(href=`/usuario/${usuario.id}/seguidos`) Seguidos
+                a(href=`/usuario/${usuario.id}/seguidores`) Seguidores
             div#publicaciones
-            div#seguidores
-            div#seguidos 
+                if publicaciones && publicaciones.length > 0
+                    each publicacion in publicaciones 
+                        div.publicacion(id=`pub-${publicacion.id}`)
+                            div#perfil(onclick=`abrirPerfil(${usuario.id})`)
+                                img(src=usuario.foto_perfil, alt="/images/sin_foto_perfil.png", width="40")
+                                h5= usuario.nombre
 
-    block footer
+                            each imagen in publicacion.imagenes
+                                img(src=imagen.imagen, alt="/images/sin_imagen.png")
+
+                            div#informacion
+                                h5= publicacion.titulo
+                                p= publicacion.fecha.toLocaleDateString()
+                                p= publicacion.descripcion
+
+                            div#acciones
+                                button(type="button") ❤️
+                                span(id=`likes-${publicacion.id}`)= publicacion.likes
+                                button(onclick=`alternarComentarios(${publicacion.id}, ${JSON.stringify(publicacion.comentarios)})`) 💬
+                            
+                            div.form-comentario
+                                input(type="text", id=`input-coment-${publicacion.id}`, placeholder="Escribí un comentario...")
+                                button(onclick=`agregarComentario(${publicacion.id})`) Comentar 
+
+                            div(id=`lista-comentarios-${publicacion.id}`)
+                else 
+                    p Aún no hay publicaciones
+
+    footer(style="position:fixed; bottom:0; width:100%; border-top:1px solid #ccc; padding:10px;") 
+        nav 
+            a(href="/publicacion/agregar") ➕
+            a(href="/") 🏠 
+            a(href=`/perfil/usuario/${usuario.id}`) Perfil
+    
+    script.
+        // ACTUALIZAR LIKES
+        async function actualizarLikes(id) {
+            const res = await fetch(`/publicacion/like/${id}`, { method: 'POST' });
+            const data = await res.json();
+            document.getElementById(`likes-${id}`).innerText = data.likes;
+        }
+
+        // MOSTRAR / OCULTAR COMENTARIOS
+        function alternarComentarios(id, comentarios) {
+            const contenedor_comentarios = document.getElementById(`lista-comentarios-${id}`);
+
+            if (contenedor_comentarios.style.display === 'none') {
+                contenedor_comentarios.innerHTML = '';
+
+                comentarios.forEach(comentario => {
+                contenedor_comentarios.innerHTML += `
+                    <img src="${comentario.id_usuario.foto_perfil}" alt="/images/sin_foto_perfil.png" width="40">
+                    <h5>${comentario.id_usuario.nombre}</h5>
+                    <p>${comentario.comentario}</p>
+                `;
+
+                contenedor_comentarios.appendChild(divComentario);
+                });
+                contenedor_comentarios.style.display = 'block';
+            } else {
+                contenedor_comentarios.style.display = 'none';
+            }
+        }
+
+        // AGREGAR COMENTARIO
+        async function agregarComentario(id) {
+            const texto = document.querySelector(`input-coment-${id}`).value;
+            if (!texto) return;
+
+            try {
+                const res = await fetch(`/publicacion/${id}/comentario/agregar`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ comentario: texto, id_usuario: usuario.id })
+                });
+
+                if (res.ok) location.reload();
+            } catch (error) { console.error('Error al agregar el comentario', error); }
+        }
+
+        // MODIFICAR COMENTARIO
+        async function modificarComentario(id_publicacion, id_comentario) {
+            try {
+                const contenedor_Comentarios = document.getElementById('comentarios');
+                contenedor_Comentarios.innerHTML = '';
+                } catch (error) { console.error('Error al modificar el comentario', error); }
+            }
+
+            // Esto hace que la página cargue más publicaciones
+            window.onscroll = function() {
+            if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight) {
+                console.log("Cargar más publicaciones...");
+                // Aquí llamarías a una ruta que devuelva JSON con las siguientes 10
+            }
+        };

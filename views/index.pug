@@ -33,7 +33,11 @@ block content
     else
       p No hay publicaciones disponibles
 
-  block footer
+  footer(style="position:fixed; bottom:0; width:100%; border-top:1px solid #ccc; padding:10px;") 
+    nav 
+      a(href="/publicacion/agregar") ➕
+      a(href="/") 🏠 
+      a(href=`/perfil/usuario/${usuario.id}`) Perfil
 
   script.
     // ACTUALIZAR LIKES
@@ -74,7 +78,7 @@ block content
         const res = await fetch(`/publicacion/${id}/comentario/agregar`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ comentario: texto, id_usuario: perfil.id })
+          body: JSON.stringify({ comentario: texto, id_usuario: usuario.id })
         });
 
         if (res.ok) location.reload();
