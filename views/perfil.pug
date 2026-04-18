@@ -10,7 +10,7 @@ block content
                     h5= usuario.nombre 
                     p= `Fecha de creación: ${usuario.fecha_creacion.toLocaleDateString()}`
                     if (esMiPerfil)
-                        a(href=`/usuario/${id}/modificar`) Modificar
+                        a(href=`/usuario/modificar`) Modificar
                         a(href="/cerrar-sesion") Cerrar sesión
                 div#descripcion 
                 p= usuario.descripcion 
@@ -23,10 +23,10 @@ block content
                             button(type="submit") Seguir
 
             div#seguidos-seguidores
-                h5= seguidores.length 
-                    span Seguidores
                 h5= seguidos.length 
                     span Seguidos
+                h5= seguidores.length 
+                    span Seguidores
 
             div#lista-seguidos-seguidores
                 a(href=`/usuario/${usuario.id}/seguidos`) Seguidos
@@ -70,12 +70,6 @@ block content
                             div(id=`lista-comentarios-${publicacion.id}`)
                 else 
                     p Aún no hay publicaciones
-
-    footer(style="position:fixed; bottom:0; width:100%; border-top:1px solid #ccc; padding:10px;") 
-        nav 
-            a(href="/publicacion/agregar") ➕
-            a(href="/") 🏠 
-            a(href=`/perfil/usuario/${id}`) Perfil
 
     script.
         // ACTUALIZAR LIKES

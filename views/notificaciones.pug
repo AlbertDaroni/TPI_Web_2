@@ -1,0 +1,11 @@
+extends layout 
+
+block content 
+    h3 Notificaciones 
+    if notificaciones && notificaciones.length > 0
+        each notificacion in notificaciones 
+            p= notificacion.tipo_evento 
+            p= notificacion.fecha 
+            p= notificacion.vista
+    else 
+        p No hay notificaciones

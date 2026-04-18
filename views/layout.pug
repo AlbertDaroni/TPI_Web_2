@@ -5,3 +5,23 @@ html
     link(rel='stylesheet', href='/stylesheets/style.css')
   body
     block content
+    
+    block footer
+      footer
+        nav 
+          button#button-buscador(onclick="alternarBuscador()") 🔎
+          form#form-busqueda(action="/buscar", method="get", style="display: none;") 
+            button(type="submit") 🔎
+            input#input-buscador(type="text", name="nombre", placeholder="Ingresá el nombre...")
+          a(href="/publicacion/agregar") ➕
+          a(href="/") 🏠
+          a(href="/notificaciones") ✉️
+          a(href=`/perfil/usuario/${userIdSesion}`) 👤
+
+    script.
+      function alternarBuscador() {
+        const form_busqueda = document.getElementById('form-busqueda');
+        const button_buscador = document.getElementById('button-buscador');
+        form_busqueda.style.display = (form_busqueda.style.display === 'none') ? 'inline-block' : 'none';
+        button_buscador.hidden ? button_buscador.hidden = false : button_buscador.hidden = true;
+      }

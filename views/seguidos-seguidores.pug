@@ -1,0 +1,29 @@
+extends layout 
+
+block content 
+    - let lista = []
+
+    if (tipo)
+        h5 Seguidos 
+        - lista = seguidos
+    else 
+        h5 Seguidores 
+        - lista = seguidores
+
+    if (lista && lista.length > 0)
+        each item in lista 
+            div#perfil 
+                div#datos-principales
+                    div#imagen 
+                        img(src=item.foto_perfil || "/images/sin_foto_perfil.png", width="50")
+                    div#datos
+                        h5= item.nombre 
+                        p= `Fecha de creación: ${item.fecha_creacion.toLocaleDateString()}`
+                    
+                    form(action=`/perfil/seguir/${item.id}`, method="post") 
+                        if (loSigo)
+                            button(type="submit") Dejar de seguir
+                        else 
+                            button(type="submit") Seguir
+    else 
+        p No tenés #{tipo}

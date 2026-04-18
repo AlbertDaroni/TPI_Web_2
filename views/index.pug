@@ -5,12 +5,12 @@ block content
     if datos && datos.length > 0
       each dato in datos 
         div.publicacion(id=`pub-${dato.publicacion.id}`)
-          div#perfil(onclick=`abrirPerfil(${dato.usuario.id})`)
+          .perfil-header(onclick=`location.href='/perfil/usuario/${dato.usuario.id}'`)
             img(src=dato.usuario.foto_perfil || "/images/sin_foto_perfil.png", width="40")
             h5= dato.usuario.nombre
 
           each imagen in dato.imagenes
-            img(src=imagen.imagen || "/images/sin_imagen.png")
+            img.main-img(src=imagen.imagen || "/images/sin_imagen.png")
 
           div#informacion
             h5= dato.publicacion.titulo
@@ -18,12 +18,19 @@ block content
             p= dato.publicacion.descripcion
 
           div#acciones
-            button(onclick=`actualizarLikes(${dato.publicacion.id})`) ❤️
-              span(id=`likes-${dato.publicacion.id}`)= dato.publicacion.likes
-            button(onclick=`alternarComentarios(${dato.publicacion.id}, ${JSON.stringify(dato.comentarios)})`) 💬
-              span(id=`comentarios-${dato.publicacion.id}`)= dato.cantidad
+            if (!esMiPerfil)
+              button(onclick=`actualizarLikes(${dato.publicacion.id})`) ❤️
+                span(id=`likes-pub-${dato.publicacion.id}`)= dato.publicacion.likes
+              button(onclick=`alternarComentarios(${dato.publicacion.id}, ${JSON.stringify(dato.comentarios)})`) 💬
+                span(id=`comentarios-pub-${dato.publicacion.id}`)= dato.cantidad
+            else
+              button(type="button") ❤️
+                span(id=`likes-pub-${dato.publicacion.id}`)= dato.publicacion.likes
+              button(onclick=`alternarComentarios(${dato.publicacion.id}, ${JSON.stringify(dato.comentarios)})`) 💬
+                span(id=`comentarios-pub-${dato.publicacion.id}`)= dato.cantidad
+
             button(onclick=`marcarInteres(${dato.publicacion.id})`) ⭐
-            a(href=`/publicacion/denunciar/${dato.publicacion.id}`) 🚩
+            a(href=`/publicacion/${dato.publicacion.id}/denunciar`) 🚩
           
           div.form-comentario
             input(type="text", id=`input-coment-${dato.publicacion.id}`, placeholder="Escribí un comentario...")
@@ -33,18 +40,12 @@ block content
     else
       p No hay publicaciones disponibles
 
-  footer(style="position:fixed; bottom:0; width:100%; border-top:1px solid #ccc; padding:10px;") 
-    nav 
-      a(href="/publicacion/agregar") ➕
-      a(href="/") 🏠 
-      a(href=`/perfil/usuario/${usuario.id}`) Perfil
-
   script.
     // ACTUALIZAR LIKES
     async function actualizarLikes(id) {
-      const res = await fetch(`/publicacion/like/${id}`, { method: 'POST' });
+      const res = await fetch(`/publicacion/${id}/like`, { method: 'POST' });
       const data = await res.json();
-      document.getElementById(`likes-${id}`).innerText = data.likes;
+      document.getElementById(`likes-pub-${id}`).innerText = data.likes;
     }
 
     // MOSTRAR / OCULTAR COMENTARIOS
@@ -86,17 +87,4 @@ block content
     }
 
     // MODIFICAR COMENTARIO
-    async function modificarComentario(id_publicacion, id_comentario) {
-      try {
-        const contenedor_Comentarios = document.getElementById('comentarios');
-        contenedor_Comentarios.innerHTML = '';
-        } catch (error) { console.error('Error al modificar el comentario', error); }
-    }
-
-    // Esto hace que la página cargue más publicaciones
-    window.onscroll = function() {
-      if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight) {
-        console.log("Cargar más publicaciones...");
-        // Aquí llamarías a una ruta que devuelva JSON con las siguientes 10
-      }
-    };
+    // Cargar más publicaciones al llegar a la última (scroll infinito)
