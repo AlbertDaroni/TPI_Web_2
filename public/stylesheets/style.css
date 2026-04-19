@@ -55,7 +55,7 @@ body {
 
 /* 2. FEED PRINCIPAL (Estilo Instagram) */
 #contenido {
-    max-width: 600px;
+    max-width: 920px;
     margin: 20px auto;
 }
 
@@ -146,6 +146,5 @@ footer nav a, button, form, input {
     border: 1px solid white;
     border-radius: 5px;
     padding: 6px;
+    cursor: pointer;
 }
-
-footer nav button { cursor: pointer; }

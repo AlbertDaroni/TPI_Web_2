@@ -4,39 +4,47 @@ block content
   div#contenido
     if datos && datos.length > 0
       each dato in datos 
-        div.publicacion(id=`pub-${dato.publicacion.id}`)
-          .perfil-header(onclick=`location.href='/perfil/usuario/${dato.usuario.id}'`)
-            img(src=dato.usuario.foto_perfil || "/images/sin_foto_perfil.png", width="40")
-            h5= dato.usuario.nombre
+        div.contenedor-post(style="display: flex; gap: 20px; align-items: flex-start; justify-content: center; margin-bottom: 40px;")
+          div.publicacion(id=`pub-${dato.publicacion.id}`, style="width: 500px; background: white; border: 1px solid #dbdbdb; flex-shrink: 0;")
+            .perfil-header(onclick=`location.href='/perfil/usuario/${dato.usuario.id}'`)
+              img(src=dato.usuario.foto_perfil || "/images/sin_foto_perfil.png", width="40")
+              h5= dato.usuario.nombre
 
-          each imagen in dato.imagenes
-            img.main-img(src=imagen.imagen || "/images/sin_imagen.png")
+            div.cuerpo-publicacion(style="display: flex; align-items: stretch; border-top: 1px solid #efefef; border-bottom: 1px solid #efefef;")
+              div.foto-seccion(style="flex: 2; line-height: 0;")
+                each imagen in dato.imagenes
+                  img.main-img(src=imagen.imagen || "/images/sin_imagen.png", style="width: 100%; height: auto;")
 
-          div#informacion
-            h5= dato.publicacion.titulo
-            p= dato.publicacion.fecha.toLocaleDateString()
-            p= dato.publicacion.descripcion
+            div#informacion
+              h5= dato.publicacion.titulo
+              p= dato.publicacion.fecha.toLocaleDateString()
+              p= dato.publicacion.descripcion
 
-          div#acciones
-            if (!esMiPerfil)
-              button(onclick=`actualizarLikes(${dato.publicacion.id})`) ❤️
-                span(id=`likes-pub-${dato.publicacion.id}`)= dato.publicacion.likes
-              button(onclick=`alternarComentarios(${dato.publicacion.id}, ${JSON.stringify(dato.comentarios)})`) 💬
-                span(id=`comentarios-pub-${dato.publicacion.id}`)= dato.cantidad
-            else
-              button(type="button") ❤️
-                span(id=`likes-pub-${dato.publicacion.id}`)= dato.publicacion.likes
-              button(onclick=`alternarComentarios(${dato.publicacion.id}, ${JSON.stringify(dato.comentarios)})`) 💬
-                span(id=`comentarios-pub-${dato.publicacion.id}`)= dato.cantidad
-
-            button(onclick=`marcarInteres(${dato.publicacion.id})`) ⭐
-            a(href=`/publicacion/${dato.publicacion.id}/denunciar`) 🚩
-          
-          div.form-comentario
-            input(type="text", id=`input-coment-${dato.publicacion.id}`, placeholder="Escribí un comentario...")
-            button(onclick=`agregarComentario(${dato.publicacion.id})`) Comentar 
-
-          div(id=`lista-comentarios-${dato.publicacion.id}`)
+            div#acciones
+              if (dato.usuario.id !== usuario.id)
+                button(onclick=`actualizarLikes(${dato.publicacion.id})`) ❤️
+                  span(id=`likes-pub-${dato.publicacion.id}`)= dato.publicacion.likes
+                button(onclick=`alternarComentarios(${dato.publicacion.id}, ${JSON.stringify(dato.comentarios)})`) 💬
+                  span(id=`comentarios-pub-${dato.publicacion.id}`)= dato.cantidad
+                button(onclick=`marcarInteres(${dato.publicacion.id})`) ⭐
+                a(href=`/publicacion/${dato.publicacion.id}/denunciar`) 🚩
+              else
+                button(type="button") ❤️
+                  span(id=`likes-pub-${dato.publicacion.id}`)= dato.publicacion.likes
+                button(onclick=`alternarComentarios(${dato.publicacion.id}, ${JSON.stringify(dato.comentarios)})`) 💬
+                  span(id=`comentarios-pub-${dato.publicacion.id}`)= dato.cantidad
+            
+            div.form-comentario
+              form(action=`/publicacion/${dato.publicacion.id}/comentario/agregar`, method="post") 
+                input(type="text", name='comentario', placeholder="Escribí un comentario...")
+                button(type="submit") Comentar
+            
+          div(id=`lista-comentarios-pub-${dato.publicacion.id}`, style="display: none; flex: 1; padding: 15px; border-left: 1px solid #efefef; max-height: 450px; overflow-y: auto;")
+            each comentario in dato.comentarios 
+              img(src=comentario.usuario.foto_perfil || "/images/sin_foto_perfil.png", width="40")
+              h5= comentario.usuario.nombre 
+              p= comentario.comentario 
+              button(onclick=`eliminarComentario(${comentario.id})`) 🗑️
     else
       p No hay publicaciones disponibles
 
@@ -50,40 +58,28 @@ block content
 
     // MOSTRAR / OCULTAR COMENTARIOS
     function alternarComentarios(id, comentarios) {
-      const contenedor_comentarios = document.getElementById(`lista-comentarios-${id}`);
+      const contenedor_comentarios = document.getElementById(`lista-comentarios-pub-${id}`);
 
       if (contenedor_comentarios.style.display === 'none') {
         contenedor_comentarios.innerHTML = '';
 
         comentarios.forEach(comentario => {
           contenedor_comentarios.innerHTML += `
-            <img src="${comentario.id_usuario.foto_perfil}" alt="/images/sin_foto_perfil.png" width="40">
-            <h5>${comentario.id_usuario.nombre}</h5>
-            <p>${comentario.comentario}</p>
+            <div class="comentario-item" style="display: flex; gap: 10px; margin-bottom: 10px; align-item: center;">
+              <img src=${comentario.usuario.foto_perfil} || "/images/sin_foto_perfil.png" width="30" height="30" style="border-radius: 50%;">
+              <div>
+                <h5>${comentario.usuario.nombre}</h5>
+                <p>${comentario.comentario}</p>
+              </div>
+              <button onclick="eliminarComentario(${comentario.id})" style="border: none; background: none; cursor: pointer;">🗑️</button>
+            </div>
           `;
-
-          contenedor_comentarios.appendChild(divComentario);
         });
+
         contenedor_comentarios.style.display = 'block';
       } else {
         contenedor_comentarios.style.display = 'none';
       }
-    }
-
-    // AGREGAR COMENTARIO
-    async function agregarComentario(id) {
-      const texto = document.querySelector(`input-coment-${id}`).value;
-      if (!texto) return;
-
-      try {
-        const res = await fetch(`/publicacion/${id}/comentario/agregar`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ comentario: texto, id_usuario: usuario.id })
-        });
-
-        if (res.ok) location.reload();
-      } catch (error) { console.error('Error al agregar el comentario', error); }
     }
 
     // MODIFICAR COMENTARIO

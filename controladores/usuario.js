@@ -7,8 +7,8 @@ async function registrar(req, res, next) {
         const { nombre, email, contraseña } = req.body;
 
         const [filas] = (await db.query(`
-            INSERT INTO usuarios (nombre, foto_perfil, email, contraseña, fecha_creacion, descripcion, cantidad_seguidores, cantidad_seguidos, seguidores, seguidos)
-            VALUES (?, null, ?, ?, NOW(), null, 0, 0, null, null)`, [nombre, email, contraseña]
+            INSERT INTO usuarios (nombre, foto_perfil, email, contraseña, fecha_creacion, descripcion)
+            VALUES (?, null, ?, ?, NOW(), null)`, [nombre, email, contraseña]
         ));
 
         req.session.userId = filas.insertId;
@@ -57,40 +57,40 @@ async function modificar(req, res, next) {
     }
 }
 
-/* BUSCAR UN USUARIO ------------------------------------------------------------------------------------------------------ */
-async function buscar(req, res, next) {
-    try {
-        const nombre = req.query.nombre;
-        const [usuario] = await db.query('SELECT id FROM usuarios WHERE nombre = ?', [nombre]);
-
-        if (usuario.length > 0) {
-            res.redirect(`/perfil/usuario/${usuario[0].id}`);
-        } else {
-            res.redirect('/').send('No se ha encontrado ningún usuario con ese nombre');
-        }
-    } catch (error) { next(); }
-}
-
 /* PERFIL ----------------------------------------------------------------------------------------------------------------- */
 async function perfil(req, res, next) {
     try {
-        const id_seguido = req.params.id;
-        const id_seguidor = req.session.userId;
+        const id_perfil = req.params.id;
+        const id_registrado = req.session.userId;
+        const esMiPerfil = id_perfil == id_registrado;
 
-        const [filas] = await db.query('SELECT * FROM usuarios WHERE id = ?', [id_seguido]);
-        const [publicaciones] = await controlador.obtenerDatosGeneralesPublicacion("usuario", null, id_seguido, null);
-        const [verificacion] = await db.query('SELECT * FROM seguidores WHERE id_seguidor = ? AND id_seguido = ?', [id_seguidor, id_seguido]);
-        const [[seguidos]] = await db.query('SELECT COUNT(*) FROM seguidores WHERE id_seguidor = ?', [id_seguido]);
-        const [[seguidores]] = await db.query('SELECT COUNT(*) FROM seguidores WHERE id_seguido = ?', [id_seguido]);
+        const [filas] = await db.query('SELECT * FROM usuarios WHERE id = ?', [id_perfil]);
+        const publicaciones = await controlador.obtenerDatosGeneralesPublicacion("usuario", null, id_perfil, null);
+        const [loSigo] = await db.query('SELECT * FROM seguidores WHERE id_seguidor = ? AND id_seguido = ?', [id_registrado, id_perfil]);
+        const [[seguidos_Cantidad]] = await db.query('SELECT COUNT(*) AS Total FROM seguidores WHERE id_seguidor = ?', [id_perfil]);
+        const [[seguidores_Cantidad]] = await db.query('SELECT COUNT(*) AS Total FROM seguidores WHERE id_seguido = ?', [id_perfil]);
+
+        let publicaciones_Seguidos = [];
+        let publicaciones_Favoritas = [];
+
+        if (esMiPerfil) {
+            const [filas] = await db.query('SELECT id_seguido FROM seguidores WHERE id_seguidor = ?', [id_registrado]);
+            const ID_Seguidos = filas.map(fila => fila.id_seguido);
+
+            if (ID_Seguidos.length > 0) publicaciones_Seguidos = await controlador.obtenerDatosGeneralesPublicacion("varios_usuarios", null, ID_Seguidos);
+            publicaciones_Favoritas = await controlador.obtenerDatosGeneralesPublicacion("favoritas", '', id_registrado);
+        }
 
         res.render('perfil', {
             usuario: filas[0],
             publicaciones: publicaciones,
-            seguidos: seguidos,
-            seguidores: seguidores,
-            loSigo: verificacion.length > 0,
-            esMiPerfil: id_seguidor == id_seguido,
-            id: id_seguidor
+            seguidos: seguidos_Cantidad.Total,
+            seguidores: seguidores_Cantidad.Total,
+            publicaciones_Seguidos: publicaciones_Seguidos,
+            publicaciones_Favoritas: publicaciones_Favoritas,
+            loSigo: loSigo.length > 0,
+            esMiPerfil,
+            id: id_registrado
         });
     } catch (error) { next(error); }
 }
@@ -112,7 +112,7 @@ async function seguidores(req, res, next) {
 }
 
 /* SEGUIR / DEJAR DE SEGUIR ----------------------------------------------------------------------------------------------- */
-async function alternarSeguimiento() {
+async function alternarSeguimiento(req, res, next) {
     try {
         const id_seguidor = req.session.userId;
         const id_seguido = req.params.id;
@@ -125,7 +125,7 @@ async function alternarSeguimiento() {
             await db.query('INSERT INTO seguidores(id_seguidor, id_seguido) VALUES(?, ?)', [id_seguidor, id_seguido]);
         }
 
-        res.redirect(`/perfil/${id_seguido}`);
+        res.redirect(`/perfil/usuario/${id_seguido}`);
     } catch (error) { next(error); }
 }
 
@@ -143,7 +143,6 @@ module.exports = {
     registrar,
     ingresar,
     modificar,
-    buscar,
     perfil,
     seguidores,
     seguidos,

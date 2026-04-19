@@ -36,12 +36,16 @@ async function crearPublicacion(req, res, next) {
 /* CREAR COMENTARIO ------------------------------------------------------------------------------------------------------- */
 async function agregarComentario(req, res, next) {
     try {
-        const { comentario, id_usuario } = req.body;
+        const { comentario } = req.body;
         const id_publicacion = req.params.id;
+        const id = req.session.userId;
         
+        if (comentario == '') return;
+
         await db.query(`
             INSERT INTO comentarios (comentario, fecha, id_publicacion, id_usuario)
-            VALUES (?, NOW(), ?, ?)`, [comentario, id_publicacion, id_usuario]);
+            VALUES (?, NOW(), ?, ?)`, [comentario, id_publicacion, id]
+        );
 
         res.redirect(`/#pub-${id_publicacion}`);
     } catch (error) { next(error); }
@@ -97,7 +101,7 @@ async function eliminarPublicacion(req, res, next) {
         await db.query('DELETE FROM etiquetas WHERE id_publicacion = ?', [req.params.id]);
         await db.query('DELETE FROM publicaciones WHERE id = ?', [req.params.id]);
 
-        res.redirect(`/perfil/${req.body.id_usuario}`);
+        res.redirect(`/perfil/usuario/${req.body.id_usuario}`);
     } catch (error) { next(error); }
 }
 

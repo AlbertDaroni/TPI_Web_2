@@ -68,7 +68,7 @@ router.get('/publicacion/agregar', publicacion.crearPublicacion);
 router.post('/publicacion/agregar', upload.single('imagen'), publicacion.crearPublicacion);
 
 /* Eliminar publicación */
-router.post('/publicacion/eliminar/:id', publicacion.eliminarPublicacion);
+router.post('/publicacion/:id/eliminar', publicacion.eliminarPublicacion);
 
 /* Crear comentario */
 router.post('/publicacion/:id/comentario/agregar', publicacion.agregarComentario);
@@ -92,6 +92,6 @@ router.post('/perfil/seguir/:id', usuario.alternarSeguimiento);
 router.get('/notificaciones', usuario.notificaciones);
 
 /* Buscar un usuario */
-router.get('/buscar', usuario.buscar);
+router.get('/buscar', controlador.buscar);
 
 module.exports = router;
