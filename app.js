@@ -6,7 +6,8 @@ const logger = require('morgan');
 const sesion = require('express-session');
 
 const indexRouter = require('./routes/index');
-const usersRouter = require('./routes/users');
+const usuariosRouter = require('./routes/usuario');
+const publicacionesRouter = require('./routes/publicacion');
 
 const app = express();
 
@@ -29,14 +30,21 @@ app.use(sesion({
   }
 }));
 
+/* MIDDLEWARE para reconocer el usuario en todas las vistas */
+app.use((req, res, next) => {
+    res.locals.userIdSesion = req.session.userId; 
+    next();
+});
+
+app.use('/usuario', usuariosRouter);
+app.use('/publicacion', publicacionesRouter);
 app.use('/', indexRouter);
-app.use('/users', usersRouter);
 
-// catch 404 and forward to error handler
-app.use(function(req, res, next) { next(createError(404)); });
+// Atrapar un Error 404 y seguir al Manejador de Error
+app.use((req, res, next) => { next(createError(404)); });
 
-// error handler
-app.use(function(err, req, res, next) {
+// Manejador de error
+app.use((err, req, res, next) => {
   // set locals, only providing error in development
   res.locals.message = err.message;
   res.locals.error = req.app.get('env') === 'development' ? err : {};

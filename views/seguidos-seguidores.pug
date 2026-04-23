@@ -1,29 +1,12 @@
 extends layout 
 
 block content 
-    - let lista = []
-
-    if (tipo)
-        h5 Seguidos 
-        - lista = seguidos
-    else 
-        h5 Seguidores 
-        - lista = seguidores
+    h5= (tipo === "seguidos") ? 'Seguidos' : 'Seguidores'
 
     if (lista && lista.length > 0)
         each item in lista 
-            div#perfil 
-                div#datos-principales
-                    div#imagen 
-                        img(src=item.foto_perfil || "/images/sin_foto_perfil.png", width="50")
-                    div#datos
-                        h5= item.nombre 
-                        p= `Fecha de creación: ${item.fecha_creacion.toLocaleDateString()}`
-                    
-                    form(action=`/perfil/seguir/${item.id}`, method="post") 
-                        if (loSigo)
-                            button(type="submit") Dejar de seguir
-                        else 
-                            button(type="submit") Seguir
+            div.usuario-item(onclick=`location.href='/usuario/${item.id}/perfil'`, style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;")
+                img(src=item.foto_perfil || "/images/sin_foto_perfil.png", width="50", height="50", style="border-radius: 50%")
+                h5(style="margin:0")= item.nombre 
     else 
         p No tenés #{tipo}

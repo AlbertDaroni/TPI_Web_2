@@ -7,8 +7,7 @@ async function crearPublicacion(req, res, next) {
         if (req.method === 'GET') {
             res.render('agregar', { id });
         } else {
-            const { titulo, descripcion, licencia, usuarios, etiquetados } = req.body;
-            const imagen = req.file ? `/uploads/${req.file.filename}`: '/images/sin_imagen.png';
+            const { titulo, descripcion, licencia, etiquetas } = req.body;
     
             const [result] = await db.query(`
                 INSERT INTO publicaciones (titulo, descripcion, likes, fecha, denuncias, id_usuario)
@@ -16,15 +15,24 @@ async function crearPublicacion(req, res, next) {
             );
     
             const id_publicacion = result.insertId;
-            await db.query(`INSERT INTO imagenes (imagen, licencia, id_publicacion)
-            VALUES (?, ?, ?)`, [imagen, licencia, id_publicacion]);
+
+            if (req.files && req.files.length > 0) {
+                for (const imagen of req.files) {
+                    const ruta = `/uploads/${imagen.filename}`;
+                    await db.query(`
+                        INSERT INTO imagenes (imagen, licencia, id_publicacion)
+                        VALUES (?, ?, ?)`, [ruta, licencia, id_publicacion]
+                    );
+                }
+            }
     
-            const [id_usuarios] = await db.query('SELECT id FROM usuarios WHERE id IN (?)', [etiquetados]);
-    
-            if (etiquetados) {
-                for(const usuario of id_usuarios) {
-                    await db.query(`INSERT INTO etiquetas (id_publicacion, id_usuario)
-                    VALUES (?, ?)`, [id_publicacion, usuario.id]);
+            if (etiquetas) {
+                for(let etiqueta of etiquetas) {
+                    if (etiqueta.trim() !== "") {
+                        etiqueta = `#${etiqueta}`;
+                        await db.query(`INSERT INTO etiquetas (titulo, id_publicacion)
+                        VALUES (?, ?)`, [etiqueta, id_publicacion]);
+                    }
                 }
             }
     
@@ -113,6 +121,39 @@ async function eliminarComentario(req, res, next) {
     } catch (error) { next(error); }
 }
 
+/* MARCAR INTERÉS --------------------------------------------------------------------------------------------------------- */
+async function marcarInteres(req, res, next) {
+    try {
+        const id_publicacion = req.params.id_publicacion;
+        const id_usuario_interesado = req.session.userId;
+        const motivoInteres = req.body.motivoInteres;
+        
+        const [dueño] = await db.query('SELECT id_usuario FROM publicaciones WHERE id = ?', [id_publicacion]);
+        const id_usuario_dueño = dueño[0].id_usuario;
+
+        await db.query(`INSERT INTO notificaciones(tipo_evento, motivo, fecha, vista, id_causante, id_dueño, id_publicacion)
+            VALUES("Interes", ?, NOW(), 0, ?, ?, ?)`, [motivoInteres, id_usuario_interesado, id_usuario_dueño, id_publicacion]);
+
+        res.redirect(`/#pub-${id_publicacion}`);
+    } catch (error) { next(); }
+}
+
+/* GUARDAR PUBLICACIÓN ---------------------------------------------------------------------------------------------------- */
+async function guardarPublicacion(req, res, next) {
+    try {
+        const id_publicacion = req.params.id;
+        const id_usuario = req.session.userId;
+        const nombreLista = req.body;
+
+        if (nombreLista.trim() === '') return;
+
+        await db.query(`INSERT INTO favoritos(nombre, id_publicacion, id_usuario)
+            VALUES(?, ?, ?)`, [nombreLista, id_publicacion, id_usuario]);
+
+        res.redirect(`/#pub-${id_publicacion}`).send('Guardado con éxito');
+    } catch (error) { next(); }
+}
+
 module.exports = {
     crearPublicacion,
     agregarComentario,
@@ -120,5 +161,7 @@ module.exports = {
     denunciarPublicacion,
     denunciarComentario,
     eliminarPublicacion,
-    eliminarComentario
+    eliminarComentario,
+    marcarInteres,
+    guardarPublicacion
 };

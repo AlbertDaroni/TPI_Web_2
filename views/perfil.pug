@@ -5,13 +5,13 @@ block content
         if lista && lista.length > 0
             each publicacion in lista 
                 div.publicacion(id=`pub-${publicacion.id}`)
-                    .perfil-header(onclick=`location.href='/perfil/usuario/${usuario.id}'`)
+                    .perfil-header(onclick=`location.href='/usuario/${usuario.id}/perfil'`)
                         img(src=usuario.foto_perfil || "/images/sin_foto_perfil.png", width="40")
                         h5= usuario.nombre
 
                     each imagen in publicacion.imagenes
                         img.main-img(src=imagen.imagen || "/images/sin_imagen.png")
-                        if imagen.licencia === 0
+                        if (imagen.licencia === 0)
                             p Sin licencia
                         else 
                             p Con licencia 
@@ -59,7 +59,7 @@ block content
                     p= usuario.descripcion 
                 
                 if (!esMiPerfil)
-                    form(action=`/perfil/seguir/${usuario.id}`, method="post") 
+                    form(action=`/usuario/perfil/seguir/${usuario.id}`, method="post") 
                         if (loSigo)
                             button(type="submit") Dejar de seguir
                         else 

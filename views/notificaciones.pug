@@ -1,11 +1,46 @@
 extends layout 
 
 block content 
-    h3 Notificaciones 
-    if notificaciones && notificaciones.length > 0
-        each notificacion in notificaciones 
-            p= notificacion.tipo_evento 
-            p= notificacion.fecha 
-            p= notificacion.vista
-    else 
-        p No hay notificaciones
+    div.lista-container(style="max-width: 900px; margin: 20px auto; padding: 10px;")
+        h3 Notificaciones 
+        if (notificaciones && notificaciones.length > 0)
+            each n in notificaciones 
+                div.notificacion-item(onclick=`location.href='/usuario/${n.id_causante}/perfil'`, style=`display: flex; align-items: center; gap: 15px; padding: 15px; border-bottom: 1px solid #eee; ${n.vista ? '' : 'background-color: #f0f7ff;'}`)
+                    img(src=n.foto_perfil || "/images/sin_foto_perfil.png", width="45", height="45", style="border-radius: 50%")
+                    
+                    div.info-notificacion(style="flex: 1")
+                        p(style="margin: 0")
+                            strong= n.nombre
+                            if (n.tipo_evento === "Interes")
+                                |  se interesó en tu publicación 
+                                strong "#{n.titulo}"
+                                br
+                                span(style="color: #666; font-size: 0.9rem") Motivo: #{n.motivo}
+                            else if (n.tipo_evento === "Nuevo seguidor")
+                                |  comenzó a seguirte.
+                            else
+                                |  interactuó contigo.
+                        
+                        small(style="color: #999")= n.fecha.toLocaleDateString() + " " + n.fecha.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+
+                    button(onclick=`event.stopPropagation(); actualizarVisto(${n.id})`, id=`boton-visto-${n.id}`) ✖️
+        else 
+            p(style="text-align: center; color: #999; margin-top: 40px;") No hay notificaciones
+
+    script.
+        // ACTUALIZAR VISTO
+        async function actualizarVisto(id) {
+            try {
+                const boton_visto = document.getElementById(`boton-visto-${id}`);
+                const res = await fetch(`/usuario/notificaciones/${id}/actualizarVisto`, { method: 'POST' });
+                const data = await res.json();
+
+                if (data.vista === 1) {
+                    boton_visto.innerText = "✔️";
+                    boton_visto.parentElement.style.backgroundColor = "transparent";
+                } else {
+                    boton_visto.innerText = "✖️";
+                    boton_visto.parentElement.style.backgroundColor = "#f0f7ff";
+                }
+            } catch (error) { console.error("Error:", error); }
+        }

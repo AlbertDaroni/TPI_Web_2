@@ -15,8 +15,8 @@ html
             input#input-buscador(type="text", name="nombre", placeholder="Ingresá el nombre...")
           a(href="/publicacion/agregar") ➕
           a(href="/") 🏠
-          a(href="/notificaciones") ✉️
-          a(href=`/perfil/usuario/${userIdSesion}`) 👤
+          a(href="/usuario/notificaciones") ✉️
+          a(href=`/usuario/${userIdSesion}/perfil`) 👤
 
     script.
       function alternarBuscador() {

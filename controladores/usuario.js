@@ -98,16 +98,26 @@ async function perfil(req, res, next) {
 /* VER SEGUIDOS ----------------------------------------------------------------------------------------------------------- */
 async function seguidos(req, res, next) {
     try {
-        const [filas] = await db.query('SELECT seguidos FROM usuarios WHERE id = ?', [req.params.id]);
-        res.render('seguidos_seguidores', { seguidos: filas, usuario: req.params.id });
+        const [filas] = await db.query(`
+            SELECT u.id, u.nombre, u.foto_perfil 
+            FROM usuarios u
+            JOIN seguidores s ON u.id = s.id_seguido
+            WHERE s.id_seguidor = ?`, [req.params.id]
+        );
+        res.render('seguidos-seguidores', { tipo: "seguidos", lista: filas, id_perfil: req.params.id });
     } catch (error) { next(error); }
 }
 
 /* VER SEGUIDORES --------------------------------------------------------------------------------------------------------- */
 async function seguidores(req, res, next) {
     try {
-        const [filas] = await db.query('SELECT seguidores FROM usuarios WHERE id = ?', [req.params.id]);
-        res.render('seguidos_seguidores', { seguidores: filas, usuario: req.params.id });
+        const [filas] = await db.query(`
+            SELECT u.id, u.nombre, u.foto_perfil 
+            FROM usuarios u
+            JOIN seguidores s ON u.id = s.id_seguidor
+            WHERE s.id_seguido = ?`, [req.params.id]
+        );
+        res.render('seguidos-seguidores', { tipo: "seguidores", lista: filas, usuario: req.params.id });
     } catch (error) { next(error); }
 }
 
@@ -121,11 +131,15 @@ async function alternarSeguimiento(req, res, next) {
 
         if (existe.length > 0 ) {
             await db.query('DELETE FROM seguidores WHERE id_seguidor = ? AND id_seguido = ?', [id_seguidor, id_seguido]);
+            await db.query(`INSERT INTO notificaciones (tipo_evento, fecha, vista, id_causante, id_dueño, id_publicacion)
+                VALUES ('Dejó de seguirte', NOW(), 0, ?, ?, NULL)`, [id_seguido, id_seguidor]);
         } else {
             await db.query('INSERT INTO seguidores(id_seguidor, id_seguido) VALUES(?, ?)', [id_seguidor, id_seguido]);
+            await db.query(`INSERT INTO notificaciones (tipo_evento, fecha, vista, id_causante, id_dueño, id_publicacion)
+                VALUES ('Nuevo seguidor', NOW(), 0, ?, ?, NULL)`, [id_seguido, id_seguidor]);
         }
 
-        res.redirect(`/perfil/usuario/${id_seguido}`);
+        res.redirect(`/usuario/${id_seguido}/perfil`);
     } catch (error) { next(error); }
 }
 
@@ -133,10 +147,27 @@ async function alternarSeguimiento(req, res, next) {
 async function notificaciones(req, res, next) {
     try {
         const id = req.session.userId;
-        const [notificaciones] = await db.query('SELECT * FROM notificaciones WHERE id_usuario = ?', [id]);
+        const [filas] = await db.query(`
+            SELECT n.*, u.nombre, u.foto_perfil, p.titulo
+            FROM notificaciones n
+            JOIN usuarios u ON n.id_causante = u.id
+            LEFT JOIN publicaciones p ON n.id_publicacion = p.id
+            WHERE id_dueño = ?
+            ORDER BY fecha DESC`, [id]
+        );
 
-        res.render('notificaciones', { notificaciones, id });
+        res.render('notificaciones', { notificaciones: filas });
     } catch (error) { next(); }
+}
+
+/* ACTUALIZAR EL VISTO ---------------------------------------------------------------------------------------------------- */
+async function actualizarVisto(req, res, next) {
+    try {
+        const id_notificacion = req.params.id;
+        const [[notificacion]] = await db.query('SELECT vista FROM notificaciones WHERE id = ?', [id_notificacion]);
+        if (notificacion.vista === 0) await db.query('UPDATE notificaciones SET vista = 1 WHERE id = ?', [id_notificacion]);
+        res.json({ vista: notificacion.vista });
+    } catch (error) { next(error); }
 }
 
 module.exports = {
@@ -147,5 +178,6 @@ module.exports = {
     seguidores,
     seguidos,
     alternarSeguimiento,
-    notificaciones
+    notificaciones,
+    actualizarVisto
 };

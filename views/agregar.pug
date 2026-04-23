@@ -10,8 +10,8 @@ block content
         br
         textarea(name="descripcion", cols="50", rows="5") 
         br
-        label(for="imagen") Imagen
-        input(type="file", name="imagen", required)
+        label(for="imagen") Imagen/es
+        input(type="file", name="imagenes", multiple, required)
         br
         label(for="licencia") Licencia 
         input(type="radio", name="licencia", value=true)
@@ -19,12 +19,26 @@ block content
         input(type="radio", name="licencia", value=false)
         small No 
         br
-        if (seguidos && seguidos.length > 0)
-            label Etiquetar
-            div.lista-seguidos
-                each seguido in seguidos 
-                    div.usuario-etiqueta
-                        img(src=seguido.foto_perfil || "/images/sin_foto_perfil.png", width="40")
-                        h5= seguido.nombre
-                        input(type="checkbox", name="etiquetados", value=seguido.id)
+        label(for="etiquetas") Añadir etiquetas
+        div#seccion-etiquetas
+            div.fila-etiqueta
+                input(type="text", name="etiquetas[]", required)
+        button(type="button", onclick="nuevaEtiqueta()") Agregar nueva etiqueta
+        br
         button(type="submit") Crear
+
+    script.
+        function nuevaEtiqueta() {
+            const seccion_etiquetas = document.getElementById('seccion-etiquetas');
+            const contenedor = document.createElement('div');
+            contenedor.className = 'fila-etiqueta';
+
+            contenedor.innerHTML = `
+                <input type="text" name="etiquetas[]" required>
+                <button type="button" onclick="eliminarEtiqueta(this)">🗑️</button>
+            `;
+
+            seccion_etiquetas.appendChild(contenedor);
+        }
+
+        function eliminarEtiqueta(boton) { boton.parentElement.remove(); }

@@ -6,7 +6,7 @@ block content
             h2 Iniciar sesión 
             if (error)
                 p.error= error
-            form(action="/ingresar", method="post") 
+            form(action="/usuario/ingresar", method="post") 
                 label(for="nombre") Nombre 
                 input(type="text", name="nombre", required)
                 label(for="email") Email 
@@ -15,6 +15,6 @@ block content
                 input(type="password", name="contraseña", required)
                 button(type="submit") Iniciar sesión
             br
-            p ¿No tenés una cuenta? #[a(href="/registrarse") Registrate]
+            p ¿No tenés una cuenta? #[a(href="/usuario/registrarse") Registrate]
 
 block footer

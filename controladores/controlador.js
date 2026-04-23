@@ -38,7 +38,7 @@ async function buscar(req, res, next) {
         const [publicacion] = await db.query('SELECT id FROM publicaciones WHERE titulo LIKE ?', [nombre]);
 
         if (usuario.length > 0) {
-            res.redirect(`/perfil/usuario/${usuario[0].id}`);
+            res.redirect(`/usuario/${usuario[0].id}/perfil`);
         } else if (publicacion.length > 0) {
             res.redirect(`/#pub-${publicacion[0].id}`);
         } else {
