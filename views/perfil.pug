@@ -1,96 +1,77 @@
 extends layout 
 
+block estilo 
+    link(rel="stylesheet", href="/stylesheets/perfil.css")
+
 block content 
     mixin renderLista(lista)
-        if lista && lista.length > 0
-            each publicacion in lista 
-                div.publicacion(id=`pub-${publicacion.id}`)
-                    .perfil-header(onclick=`location.href='/usuario/${usuario.id}/perfil'`)
-                        img(src=usuario.foto_perfil || "/images/sin_foto_perfil.png", width="40")
-                        h5= usuario.nombre
-
-                    each imagen in publicacion.imagenes
-                        img.main-img(src=imagen.imagen || "/images/sin_imagen.png")
-                        if (imagen.licencia === 0)
-                            p Sin licencia
-                        else 
-                            p Con licencia 
-
-                    div#informacion
-                        h5= publicacion.publicacion.titulo
-                        p= publicacion.publicacion.fecha.toLocaleDateString()
-                        p= publicacion.publicacion.descripcion
-
-                    div#acciones
-                        if (!esMiPerfil)
-                            button(onclick=`actualizarLikes(${publicacion.publicacion.id})`) ❤️
-                                span(id=`likes-${publicacion.publicacion.id}`)= publicacion.publicacion.likes
-                            button(onclick=`alternarComentarios(${publicacion.publicacion.id}, ${JSON.stringify(publicacion.comentarios)})`) 💬
-                                span(id=`comentarios-${publicacion.publicacion.id}`)= publicacion.cantidad
-                            button(onclick=`marcarInteres(${publicacion.publicacion.id})`) ⭐
-                            a(href=`/publicacion/denunciar/${publicacion.publicacion.id}`) 🚩
-                        else
-                            button(type="button") ❤️
-                                span(id=`likes-${publicacion.publicacion.id}`)= publicacion.publicacion.likes
-                            button(onclick=`alternarComentarios(${publicacion.publicacion.id}, ${JSON.stringify(publicacion.comentarios)})`) 💬
-                                span(id=`comentarios-${publicacion.publicacion.id}`)= publicacion.cantidad
-                            a(href=`/publicacion/${publicacion.publicacion.id}/eliminar`) 🗑️
-                                    
-                        div.form-comentario
-                            input(type="text", id=`input-coment-${publicacion.publicacion.id}`, placeholder="Escribí un comentario...")
-                            button(onclick=`agregarComentario(${publicacion.publicacion.id})`) Comentar 
-
-                        div(id=`lista-comentarios-${publicacion.publicacion.id}`)
+        if (lista && lista.length > 0)
+            each pub in lista 
+                div.publicacion-mini(onclick=`location.href='/#pub-${pub.publicacion.id}'`)
+                    img(src=pub.imagenes[0].imagen || "/images/sin_imagen.png")
+                    
+                    div.overlay
+                        span ❤️ #{pub.publicacion.likes}
+                        span 💬 #{pub.cantidad}
         else 
-            p Aún no hay publicaciones
+            p.sin-contenido Aún no hay publicaciones
 
     div#contenido
-        div#perfil 
-            div#datos-principales
-                div#imagen 
-                    img(src=usuario.foto_perfil || "/images/sin_foto_perfil.png", width="40")
-                div#datos
+        header#datos-principales
+            div#imagen 
+                img(src=usuario.foto_perfil || "/images/sin_foto_perfil.png")
+            
+            section#datos
+                div.fila-usuario
                     h5= usuario.nombre 
-                    p= `Fecha de creación: ${usuario.fecha_creacion.toLocaleDateString()}`
                     if (esMiPerfil)
-                        a(href=`/usuario/modificar`) Modificar
-                        a(href="/cerrar-sesion") Cerrar sesión
+                        a.btn-edit(href=`/usuario/modificar`) Editar perfil
+                        a.btn-logout(href="/cerrar-sesion") Cerrar sesión
+                
+                div#seguidos-seguidores
+                    a(href=`/usuario/${usuario.id}/seguidores`)
+                        span= seguidores 
+                        |  seguidores
+                    a(href=`/usuario/${usuario.id}/seguidos`)
+                        span= seguidos 
+                        |  seguidos
+                
                 div#descripcion 
                     p= usuario.descripcion 
                 
                 if (!esMiPerfil)
                     form(action=`/usuario/perfil/seguir/${usuario.id}`, method="post") 
                         if (loSigo)
-                            button(type="submit") Dejar de seguir
+                            button.btn-unfollow(type="submit") Dejar de seguir
                         else 
-                            button(type="submit") Seguir
+                            button.btn-follow(type="submit") Seguir
 
-            div#seguidos-seguidores
-                h5= seguidos
-                    span  Seguidos
-                h5= seguidores
-                    span  Seguidores
+        nav#publicaciones-botones
+            if (esMiPerfil)
+                div.tab-buttons
+                    button(onclick="mostrarSeccion('mis-publicaciones')") 
+                        i.icon-grid 
+                        | Publicaciones
+                    button(onclick="mostrarSeccion('publicaciones-seguidos')") 
+                        i.icon-people
+                        | Seguidos
+                    button(onclick="mostrarSeccion('mis-favoritos')") 
+                        i.icon-bookmark
+                        | Guardado
+            else
+                div.tab-buttons
+                    button.active Publicaciones
 
-            div#lista-seguidos-seguidores
-                a(href=`/usuario/${usuario.id}/seguidos`) Seguidos
-                a(href=`/usuario/${usuario.id}/seguidores`) Seguidores
+        main#secciones-grid
+            div#mis-publicaciones.seccion-perfil
+                +renderLista(publicaciones)
 
-            div#publicaciones-botones
-                if (esMiPerfil)
-                    button(onclick="mostrarSeccion('mis-publicaciones')") Mis publicaiones
-                    button(onclick="mostrarSeccion('publicaciones-seguidos')") Publicaciones de seguidos
-                    button(onclick="mostrarSeccion('mis-favoritos')") Favoritos 
+            if (esMiPerfil)
+                div#publicaciones-seguidos.seccion-perfil(style="display: none;")
+                    +renderLista(publicaciones_Seguidos)
 
-                    div#mis-publicaciones.seccion-perfil
-                        +renderLista(publicaciones)
-
-                    div#publicaciones-seguidos.seccion-perfil(style="display: none;")
-                        +renderLista(publicaciones_Seguidos)
-
-                    div#mis-favoritos.seccion-perfil(style="display: none;")
-                        +renderLista(publicaciones_Favoritas)
-                else
-                    +renderLista(publicaciones)
+                div#mis-favoritos.seccion-perfil(style="display: none;")
+                    +renderLista(publicaciones_Favoritas)
 
     script.
         // ACTUALIZAR LIKES
@@ -147,5 +128,10 @@ block content
         // MOSTRAR SECCIÓN SELECCIONADA
         function mostrarSeccion(idSeccion) {
             document.querySelectorAll('.seccion-perfil').forEach(div => { div.style.display = 'none'; });
-            document.getElementById(idSeccion).style.display = 'block';
+            
+            const target = document.getElementById(idSeccion);
+            target.style.display = 'grid';
+            
+            document.querySelectorAll('#publicaciones-botones button').forEach(btn => btn.classList.remove('active'));
+            event.currentTarget.classList.add('active');
         }

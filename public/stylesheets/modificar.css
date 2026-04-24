@@ -1,0 +1,58 @@
+#contenido-editar {
+    max-width: 600px;
+    margin: 40px auto;
+    background: #fff;
+    border: 1px solid #dbdbdb;
+    border-radius: 8px;
+    padding: 30px;
+}
+
+.edit-form { display: flex; flex-direction: column; gap: 20px; }
+
+/* Encabezado con la foto actual */
+.foto-edit-seccion {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.foto-edit-seccion img {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+/* Campos de entrada */
+.campo-grupo { display: flex; flex-direction: column; gap: 5px; }
+
+.campo-grupo label { font-weight: 600; font-size: 0.9rem; }
+
+.campo-grupo input, 
+.campo-grupo textarea {
+    padding: 10px;
+    border: 1px solid #dbdbdb;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    background: #fafafa;
+}
+
+.campo-grupo textarea { resize: none; min-height: 80px; }
+
+/* Botón de envío */
+.btn-guardar {
+    background-color: #0095f6;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    font-weight: 600;
+    cursor: pointer;
+    align-self: flex-start;
+    margin-top: 10px;
+}
+
+.btn-guardar:hover { background-color: #1877f2; }
+
+.error-alerta { color: #ed4956; font-size: 0.85rem; margin-bottom: 10px; }

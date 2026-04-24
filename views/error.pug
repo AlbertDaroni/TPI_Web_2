@@ -1,6 +1,71 @@
 extends layout
 
 block content
-  h1= message
-  h2= error.status
-  pre #{error.stack}
+  style.
+    .error-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 40px 20px;
+      min-height: 70vh;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    .error-title {
+      font-size: 22px;
+      font-weight: 600;
+      color: #262626;
+      margin-bottom: 20px;
+    }
+    .error-message {
+      font-size: 16px;
+      line-height: 24px;
+      color: #262626;
+      max-width: 450px;
+      margin-bottom: 25px;
+    }
+    .error-link {
+      color: #00376b;
+      text-decoration: none;
+      font-weight: 400;
+    }
+    .error-link:hover {
+      text-decoration: underline;
+    }
+    .technical-details {
+      margin-top: 50px;
+      padding: 15px;
+      background: #f8f8f8;
+      text-align: left;
+      font-family: monospace;
+      font-size: 12px;
+      max-width: 90%;
+      overflow-x: auto;
+      color: #8e8e8e;
+    }
+    .status-code {
+      font-size: 80px;
+      font-weight: 800;
+      color: #efefef;
+      position: absolute;
+      z-index: -1;
+      margin-top: -60px;
+    }
+
+  div.error-container
+    if (status === 404)
+      h1.status-code 404
+      h2.error-title Esta página no está disponible.
+      p.error-message Es posible que el enlace que seleccionaste esté dañado o que se haya eliminado la página. 
+        a.error-link(href="/") Volver al inicio
+    else
+      h1.status-code= error.status || 500
+      h2.error-title Algo salió mal.
+      p.error-message Hubo un error al procesar tu solicitud. Estamos trabajando para solucionarlo.
+      a.error-link(href="/") Volver al inicio
+
+    if error.stack
+      div.technical-details
+        h4= message
+        h1= error.status

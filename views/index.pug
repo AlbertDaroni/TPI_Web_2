@@ -1,19 +1,23 @@
 extends layout
 
+block estilo
+  link(rel="stylesheet", href="/stylesheets/index.css")
+
 block content
   div#contenido
     if (datos && datos.length > 0)
       each dato in datos 
-        div.contenedor-post(style="display: flex; gap: 20px; align-items: flex-start; justify-content: center; margin-bottom: 40px;")
-          div.publicacion(id=`pub-${dato.publicacion.id}`, style="width: 500px; background: white; border: 1px solid #dbdbdb; flex-shrink: 0;")
-            .perfil-header(onclick=`location.href='/usuario/${dato.usuario.id}/perfil'`)
+        div.contenedor-post
+          div.publicacion(id=`pub-${dato.publicacion.id}`)
+            div.perfil-header(onclick=`location.href="/usuario/${dato.usuario.id}/perfil"`)
               img(src=dato.usuario.foto_perfil || "/images/sin_foto_perfil.png", width="40")
               h5= dato.usuario.nombre
 
-            div.cuerpo-publicacion(style="display: flex; align-items: stretch; border-top: 1px solid #efefef; border-bottom: 1px solid #efefef;")
-              div.foto-seccion(style="flex: 2; line-height: 0; position: relative;")
+            div.cuerpo-publicacion
+              div.foto-seccion
                 div(id=`imagen-container-${dato.publicacion.id}`)
                   img.main-img(src=dato.imagenes[0].imagen || "/images/sin_imagen.png", style="width: 100%")
+                  p= (dato.imagenes[0].licencia === 0) ? 'Imagen sin licencia' : 'Imagen con licencia'
                 
                 if (dato.imagenes.length > 1)
                   button(onclick=`mover(${dato.publicacion.id}, -1, ${JSON.stringify(dato.imagenes)})`) ◀️
@@ -55,7 +59,7 @@ block content
               form(id=`form-agregar-comentario-${dato.publicacion.id}`, action=`/publicacion/${dato.publicacion.id}/comentario/agregar`, method="post") 
                 textarea(name='comentario', cols="30", rows="5", placeholder="Escribí un comentario...")
                 button(type="submit") Comentar
-            div(id=`lista-comentarios-pub-${dato.publicacion.id}`, style="flex: 1; padding: 15px; border-left: 1px solid #efefef; max-height: 450px; overflow-y: auto;")  
+            div(id=`lista-comentarios-pub-${dato.publicacion.id}`)  
     else
       h2 Aún no hay publicaciones
       p ¡Creá la tuya!
@@ -85,30 +89,43 @@ block content
           const nombre = comentario.usuario.nombre;
           const texto = comentario.comentario;
 
-          let htmlComentario = `
-            <div class="comentario-item" style="display: flex; gap: 10px; margin-bottom: 10px; align-item: center;">
-              <img src=${foto_perfil} width="30" height="30" style="border-radius: 50%;">
-              <div>
-                <h5>${nombre}</h5>
-                <p>${texto}</p>
-          `;
+          let htmlComentario = '';
 
           if (esMio) {
-            htmlComentario += `
-              <div style="margin-top: 5px;">
-                <a href="/publicacion/${id}/comentario/${id_comentario}/eliminar" style="text-decoration:none">🗑️</a>
-                <button onclick="alternarModificacionComentario(${id_comentario})">✏️</button>
-                <div id="seccion-modificar-comentario-${id_comentario}" style="display: none; margin-top:5px">
-                  <form action="/publicacion/${id}/comentario/${id_comentario}/modificar" method="post">
-                    <textarea name="nuevoComentario" rows="2">${texto}</textarea>
-                    <button type="submit">📩</button>
-                  </form>
-                </div>
+            htmlComentario = `
+              <div class="comentario-item">
+                <img src=${foto_perfil} width="32">
+                  <div class="comentario-cuerpo">
+                    <h5 class="comentario-cuerpo">${nombre}</h5>
+                    <p class="comentario-cuerpo">${texto}</p>
+                    <div class="comentario-acciones">
+                      <a href="/publicacion/${id}/comentario/${id_comentario}/eliminar">🗑️</a>
+                      <button onclick="alternarModificacionComentario(${id_comentario})">✏️</button>
+                      <div id="seccion-modificar-comentario-${id_comentario}" style="display: none;">
+                        <form action="/publicacion/${id}/comentario/${id_comentario}/modificar" method="post">
+                          <textarea name="nuevoComentario" rows="2">${texto}</textarea>
+                          <button type="submit">📩</button>
+                        </form>
+                      </div>
+                    </div>
+                  </div>
+              </div>
+            `;
+          } else {
+            htmlComentario = `
+              <div class="comentario-item">
+                <img src=${foto_perfil} width="32">
+                  <div class="comentario-cuerpo">
+                    <h5 class="comentario-cuerpo">${nombre}</h5>
+                    <p class="comentario-cuerpo">${texto}</p>
+                    <div class="comentario-acciones">
+                      <a class="comentario-cuerpo" href="/publicacion/comentario/${id_comentario}/denunciar">🚩</a>
+                    </div>
+                  </div>
               </div>
             `;
           }
 
-          htmlComentario += '</div></div>';
           contenedor_comentarios.innerHTML += htmlComentario;
         });
 
@@ -150,8 +167,11 @@ block content
       if (carruselStatus[idPub] >= total) carruselStatus[idPub] = 0;
       if (carruselStatus[idPub] < 0) carruselStatus[idPub] = total - 1;
 
-      const nuevaImagen = imagenes[carruselStatus[idPub]].imagen;
-      contenedor_imagen.innerHTML = `<img src="${nuevaImagen}" class="main-img" style="width: 100%;">`;
+      const nuevaImagen = imagenes[carruselStatus[idPub]];
+      contenedor_imagen.innerHTML = `
+        <img src="${nuevaImagen.imagen}" class="main-img" style="width: auto; max-width: 100%; height: auto; max-height: 500px; display: block; margin: 0 auto;">
+        <p>${(nuevaImagen.licencia === 0) ? 'Imagen sin licencia' : 'Imagen con licencia'}</p>
+      `;
 
       labelPosicion.innerText = `${carruselStatus[idPub] + 1} / ${total}`;
     }

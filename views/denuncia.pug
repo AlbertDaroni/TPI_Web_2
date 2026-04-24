@@ -1,19 +1,22 @@
 extends layout 
 
+block estilo 
+    link(rel="stylesheet", href="/stylesheets/denuncia.css")
+
 block content 
     div#contenido
-        h3 Enviar una denuncia 
+        h3 Reportar un problema
+        p Por favor, describí el motivo de tu denuncia.
+        
         if (id_publicacion)
             form(action=`/publicacion/${id_publicacion}/denunciar`, method="post") 
-                label(for="descripcion") Descripción 
-                textarea(name="descripcion", id="descripcion", rows="4", cols="50", required) 
-                button(type="submit") Enviar 
+                label(for="descripcion") Motivo de la denuncia
+                textarea(name="descripcion", placeholder="¿Por qué quieres reportar esta publicación?", required) 
+                button(type="submit") Enviar reporte
         else if (id_comentario)
-            form(action=`/comentario/denunciar/${id_comentario}`, method="post") 
-                label(for="descripcion") Descripción 
-                textarea(name="descripcion", id="descripcion", rows="4", cols="50", required) 
-                button(type="submit") Enviar 
+            form(action=`/publicacion/comentario/${id_comentario}/denunciar`, method="post") 
+                label(for="descripcion") Motivo de la denuncia
+                textarea(name="descripcion", placeholder="¿Por qué quieres reportar este comentario?", required) 
+                button(type="submit") Enviar reporte
         else
-            p No se ha encontrado el objeto a denunciar.
-    
-    a(href=`/#pub-${id_publicacion}`) Volver
+            p No se ha encontrado el objeto a denunciar

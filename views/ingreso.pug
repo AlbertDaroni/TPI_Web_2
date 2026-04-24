@@ -1,8 +1,11 @@
 extends layout 
 
+block estilo 
+    link(rel="stylesheet", href="/stylesheets/autorizacion.css")
+
 block content 
-    .auth-container 
-        .auth-box
+    div.auth-container 
+        div.auth-box
             h2 Iniciar sesión 
             if (error)
                 p.error= error

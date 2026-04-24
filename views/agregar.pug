@@ -1,31 +1,30 @@
 extends layout 
 
+block estilo 
+    link(rel="stylesheet", href="/stylesheets/agregar.css")
+
 block content 
-    h4 Crear una publicación 
-    form(action="/publicacion/agregar", method="post", enctype="multipart/form-data") 
-        label(for="titulo") Título 
-        input(type="text", name="titulo", required)
-        br
-        label(for="descripcion") Descripción
-        br
-        textarea(name="descripcion", cols="50", rows="5") 
-        br
-        label(for="imagen") Imagen/es
-        input(type="file", name="imagenes", multiple, required)
-        br
-        label(for="licencia") Licencia 
-        input(type="radio", name="licencia", value=true)
-        small Sí
-        input(type="radio", name="licencia", value=false)
-        small No 
-        br
-        label(for="etiquetas") Añadir etiquetas
-        div#seccion-etiquetas
-            div.fila-etiqueta
-                input(type="text", name="etiquetas[]", required)
-        button(type="button", onclick="nuevaEtiqueta()") Agregar nueva etiqueta
-        br
-        button(type="submit") Crear
+    div#contenido
+        h4 Crear una publicación 
+        form(action="/publicacion/agregar", method="post", enctype="multipart/form-data") 
+            label(for="titulo") Título 
+            input(type="text", name="titulo", required)
+            label(for="descripcion") Descripción
+            textarea(name="descripcion", cols="50", rows="5") 
+            label(for="imagen") Imagen/es
+            input(type="file", name="imagenes", multiple, required)
+            label(for="licencia") Licencia 
+            div.licencia-container
+                input(type="radio", name="licencia", value="true")
+                small Sí
+                input(type="radio", name="licencia", value="false", checked)
+                small No 
+            label(for="etiquetas") Añadir etiquetas
+            div#seccion-etiquetas
+                div.fila-etiqueta
+                    input(type="text", name="etiquetas[]", required)
+            button(type="button", onclick="nuevaEtiqueta()") Agregar nueva etiqueta
+            button(type="submit") Crear
 
     script.
         function nuevaEtiqueta() {

@@ -6,6 +6,10 @@ async function registrar(req, res, next) {
     try {
         const { nombre, email, contraseña } = req.body;
 
+        if (nombre.trim() === '' || email.trim() === '' || contraseña.trim() === '') {
+            res.render('registro', { error: 'Todos los campos son obligatorios' });
+        }
+
         const [filas] = (await db.query(`
             INSERT INTO usuarios (nombre, foto_perfil, email, contraseña, fecha_creacion, descripcion)
             VALUES (?, null, ?, ?, NOW(), null)`, [nombre, email, contraseña]
@@ -23,6 +27,11 @@ async function registrar(req, res, next) {
 async function ingresar(req, res, next) {
     try {
         const { nombre, email, contraseña } = req.body;
+
+        if (nombre.trim() === '' || email.trim() === '' || contraseña.trim() === '') {
+            res.render('ingreso', { error: 'Todos los campos son obligatorios' });
+        }
+
         const [filas] = (await db.query('SELECT id, nombre, email, contraseña FROM usuarios WHERE nombre = ? AND email = ? AND contraseña = ?',
             [nombre, email, contraseña]));
         
@@ -45,11 +54,15 @@ async function modificar(req, res, next) {
             const [usuarioActual] = await db.query('SELECT foto_perfil FROM usuarios WHERE id = ?', [id]);
             const foto_perfil = req.file ? `/uploads/${req.file.filename}` : usuarioActual[0].foto_perfil;
 
+            if (nombre.trim() === '' || email.trim() === '' || contraseña.trim() === '') {
+                res.render('modificar', { error: 'Todos los campos son obligatorios' });
+            }
+
             await db.query(`UPDATE usuarios SET foto_perfil = ?, nombre = ?, email = ?, contraseña = ?, descripcion = ? WHERE id = ?`,
                 [foto_perfil, nombre, email, contraseña, descripcion, id]
             );
 
-            res.redirect(`/perfil/usuario/${id}`);
+            res.redirect(`/usuario/${id}/perfil`);
         }
     } catch (error) {
         if (error.errno === 1062) return res.render('modificar', { error: 'Nombre en uso' });
@@ -63,6 +76,8 @@ async function perfil(req, res, next) {
         const id_perfil = req.params.id;
         const id_registrado = req.session.userId;
         const esMiPerfil = id_perfil == id_registrado;
+
+        if (isNaN(Number(id_perfil))) { return res.status(400).json({ error: 'Dato inválido' }); }
 
         const [filas] = await db.query('SELECT * FROM usuarios WHERE id = ?', [id_perfil]);
         const publicaciones = await controlador.obtenerDatosGeneralesPublicacion("usuario", null, id_perfil, null);
@@ -127,6 +142,8 @@ async function alternarSeguimiento(req, res, next) {
         const id_seguidor = req.session.userId;
         const id_seguido = req.params.id;
 
+        if (isNaN(Number(id_seguido))) { return res.status(400).json({ error: 'Dato inválido' }); }
+
         const [existe] = await db.query('SELECT * FROM seguidores WHERE id_seguidor = ? AND id_seguido = ?', [id_seguidor, id_seguido]);
 
         if (existe.length > 0 ) {
@@ -164,6 +181,9 @@ async function notificaciones(req, res, next) {
 async function actualizarVisto(req, res, next) {
     try {
         const id_notificacion = req.params.id;
+
+        if (isNaN(Number(id_notificacion))) { return res.status(400).json({ error: 'Dato inválido' }); }
+
         const [[notificacion]] = await db.query('SELECT vista FROM notificaciones WHERE id = ?', [id_notificacion]);
         if (notificacion.vista === 0) await db.query('UPDATE notificaciones SET vista = 1 WHERE id = ?', [id_notificacion]);
         res.json({ vista: notificacion.vista });

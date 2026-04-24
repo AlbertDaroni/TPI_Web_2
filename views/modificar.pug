@@ -1,26 +1,35 @@
 extends layout 
 
+block estilo 
+    link(rel="stylesheet", href="/stylesheets/modificar.css")
+
 block content 
-    div#perfil 
-        form(action=`/usuario/modificar`, method="post", enctype="multipart/form-data") 
-            div#datos-principales
-                div#imagen 
-                    img(src=usuario.foto_perfil || "/images/sin_foto_perfil.png", width="50")
-                label(for="imagen") Nueva foto
-                input(type="file", name="imagen", accept="image/*")
-                div#datos 
-                    if (error)
-                        p.error= error
-                    label(for="nombre") Nombre 
-                    input(type="text", name="nombre", value=usuario.nombre, required)
-                    br
-                    label(for="email") Email 
-                    input(type="email", name="email", value=usuario.email, required)
-                    br
-                    label(for="contraseña") Contraseña
-                    input(type="text", name="contraseña", value=usuario.contraseña, required)
-                div#descripcion 
-                    label(for="descripcion") Descripción
-                    br
-                    textarea(name="descripcion", cols="50", rows="5", value=usuario.descripcion)
-            button(type="submit") Aceptar
+    div#contenido-editar
+        h2 Editar Perfil
+        form.edit-form(action=`/usuario/modificar`, method="post", enctype="multipart/form-data") 
+            div.foto-edit-seccion
+                img(src=usuario.foto_perfil || "/images/sin_foto_perfil.png")
+                div.campo-grupo
+                    label(for="imagen") Cambiar foto de perfil
+                    input(type="file", name="imagen", accept="image/*")
+
+            if (error)
+                p.error-alerta= error
+
+            div.campo-grupo
+                label(for="nombre") Nombre de usuario
+                input(type="text", name="nombre", value=usuario.nombre, required)
+
+            div.campo-grupo
+                label(for="email") Correo electrónico
+                input(type="email", name="email", value=usuario.email, required)
+
+            div.campo-grupo
+                label(for="contraseña") Contraseña
+                input(type="text", name="contraseña", value=usuario.contraseña, required)
+
+            div.campo-grupo
+                label(for="descripcion") Descripción
+                textarea(name="descripcion")= usuario.descripcion
+
+            button.btn-guardar(type="submit") Aceptar

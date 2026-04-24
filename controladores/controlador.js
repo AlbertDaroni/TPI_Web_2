@@ -15,6 +15,8 @@ async function actualizarLikes(req, res, next) {
         const id = req.session.userId;
         const id_publicacion = req.params.id;
 
+        if (isNaN(Number(id_publicacion))) return;
+
         const [existeLike] = await db.query('SELECT id FROM likes WHERE id_publicacion = ? AND id_usuario = ?', [id_publicacion, id]);
 
         if (existeLike.length > 0) {
@@ -36,6 +38,8 @@ async function buscar(req, res, next) {
         const nombre = req.query.nombre;
         const [usuario] = await db.query('SELECT id FROM usuarios WHERE nombre LIKE ?', [nombre]);
         const [publicacion] = await db.query('SELECT id FROM publicaciones WHERE titulo LIKE ?', [nombre]);
+
+        if (nombre.trim() === '') return;
 
         if (usuario.length > 0) {
             res.redirect(`/usuario/${usuario[0].id}/perfil`);

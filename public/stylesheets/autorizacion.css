@@ -1,0 +1,100 @@
+/* Contenedor que ocupa toda la pantalla y centra el contenido */
+.auth-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 90vh; /* Para que no pegue al footer si existe */
+    background-color: #fafafa;
+    padding: 20px;
+}
+
+/* Caja blanca con borde */
+.auth-box {
+    background: white;
+    border: 1px solid #dbdbdb;
+    padding: 40px;
+    width: 100%;
+    max-width: 350px;
+    text-align: center;
+    border-radius: 1px;
+}
+
+/* Título */
+.auth-box h2 {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #262626;
+    margin-bottom: 25px;
+    font-weight: 300;
+    font-size: 1.8rem;
+}
+
+/* Formulario */
+.auth-box form {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+}
+
+/* Labels ocultos visualmente pero accesibles (opcional) o pequeños */
+.auth-box label {
+    font-size: 0.75rem;
+    color: #8e8e8e;
+    margin-bottom: 3px;
+    font-weight: 600;
+}
+
+/* Inputs con estilo moderno */
+.auth-box input {
+    background: #fafafa;
+    border: 1px solid #dbdbdb;
+    border-radius: 3px;
+    padding: 10px;
+    margin-bottom: 15px;
+    font-size: 0.85rem;
+    outline: none;
+}
+
+.auth-box input:focus {
+    border-color: #a8a8a8;
+}
+
+/* Botón principal azul */
+.auth-box button {
+    background-color: #0095f6;
+    color: white;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    padding: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: background-color 0.2s ease;
+}
+
+.auth-box button:hover {
+    background-color: #1877f2;
+}
+
+/* Mensaje de Error */
+.error {
+    background-color: #fff2f2;
+    color: #ed4956;
+    padding: 10px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    margin-bottom: 15px;
+    border: 1px solid #ffcccc;
+}
+
+/* Enlace a Registro/Ingreso */
+.auth-box p {
+    font-size: 0.9rem;
+    color: #262626;
+    margin-top: 20px;
+}
+
+.auth-box a {
+    color: #0095f6;
+    text-decoration: none;
+    font-weight: 600;
+}
