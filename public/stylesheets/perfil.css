@@ -37,6 +37,8 @@
 
 .tab-buttons { display: flex; justify-content: center; gap: 60px; }
 
+.btn-follow, .btn-unfollow { padding: 10px; border-radius: 15px; }
+
 #publicaciones-botones button {
     background: none;
     border: none;

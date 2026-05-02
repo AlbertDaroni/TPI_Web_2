@@ -1,7 +1,7 @@
 const db = require('../config/db');
 const controlador = require('./controlador');
+const usuario = require('../models/usuario');
 
-/* REGISTRARSE ------------------------------------------------------------------------------------------------------------ */
 async function registrar(req, res, next) {
     try {
         const { nombre, email, contraseña } = req.body;
@@ -23,7 +23,6 @@ async function registrar(req, res, next) {
     }
 }
 
-/* INGRESAR --------------------------------------------------------------------------------------------------------------- */
 async function ingresar(req, res, next) {
     try {
         const { nombre, email, contraseña } = req.body;
@@ -32,17 +31,16 @@ async function ingresar(req, res, next) {
             res.render('ingreso', { error: 'Todos los campos son obligatorios' });
         }
 
-        const [filas] = (await db.query('SELECT id, nombre, email, contraseña FROM usuarios WHERE nombre = ? AND email = ? AND contraseña = ?',
-            [nombre, email, contraseña]));
+        const nuevoUsuario = { nombre, email, contraseña };
+        const filas = await usuario.obtenerPorCredenciales(nuevoUsuario);
         
-        if (filas.length > 0) {
+        if (filas && filas.length > 0) {
             req.session.userId = filas[0].id;
             res.redirect('/');
         } else { res.render('ingreso', { error: 'Credenciales inválidas'}); }
     } catch (error) { next(error); }
 }
 
-/* MODIFICAR USUARIO ------------------------------------------------------------------------------------------------------ */
 async function modificar(req, res, next) {
     try {
         const id = req.session.userId;
@@ -70,7 +68,6 @@ async function modificar(req, res, next) {
     }
 }
 
-/* PERFIL ----------------------------------------------------------------------------------------------------------------- */
 async function perfil(req, res, next) {
     try {
         const id_perfil = req.params.id;
@@ -80,7 +77,7 @@ async function perfil(req, res, next) {
         if (isNaN(Number(id_perfil))) { return res.status(400).json({ error: 'Dato inválido' }); }
 
         const [filas] = await db.query('SELECT * FROM usuarios WHERE id = ?', [id_perfil]);
-        const publicaciones = await controlador.obtenerDatosGeneralesPublicacion("usuario", null, id_perfil, null);
+        const publicaciones = await controlador.obtenerDatosGeneralesPublicacion("usuario", null, id_perfil, req);
         const [loSigo] = await db.query('SELECT * FROM seguidores WHERE id_seguidor = ? AND id_seguido = ?', [id_registrado, id_perfil]);
         const [[seguidos_Cantidad]] = await db.query('SELECT COUNT(*) AS Total FROM seguidores WHERE id_seguidor = ?', [id_perfil]);
         const [[seguidores_Cantidad]] = await db.query('SELECT COUNT(*) AS Total FROM seguidores WHERE id_seguido = ?', [id_perfil]);
@@ -92,8 +89,8 @@ async function perfil(req, res, next) {
             const [filas] = await db.query('SELECT id_seguido FROM seguidores WHERE id_seguidor = ?', [id_registrado]);
             const ID_Seguidos = filas.map(fila => fila.id_seguido);
 
-            if (ID_Seguidos.length > 0) publicaciones_Seguidos = await controlador.obtenerDatosGeneralesPublicacion("varios_usuarios", null, ID_Seguidos);
-            publicaciones_Favoritas = await controlador.obtenerDatosGeneralesPublicacion("favoritas", '', id_registrado);
+            if (ID_Seguidos.length > 0) publicaciones_Seguidos = await controlador.obtenerDatosGeneralesPublicacion("varios_usuarios", null, ID_Seguidos, req);
+            publicaciones_Favoritas = await controlador.obtenerDatosGeneralesPublicacion("favoritas", '', id_registrado, req);
         }
 
         res.render('perfil', {
@@ -110,7 +107,6 @@ async function perfil(req, res, next) {
     } catch (error) { next(error); }
 }
 
-/* VER SEGUIDOS ----------------------------------------------------------------------------------------------------------- */
 async function seguidos(req, res, next) {
     try {
         const [filas] = await db.query(`
@@ -123,7 +119,6 @@ async function seguidos(req, res, next) {
     } catch (error) { next(error); }
 }
 
-/* VER SEGUIDORES --------------------------------------------------------------------------------------------------------- */
 async function seguidores(req, res, next) {
     try {
         const [filas] = await db.query(`
@@ -136,7 +131,6 @@ async function seguidores(req, res, next) {
     } catch (error) { next(error); }
 }
 
-/* SEGUIR / DEJAR DE SEGUIR ----------------------------------------------------------------------------------------------- */
 async function alternarSeguimiento(req, res, next) {
     try {
         const id_seguidor = req.session.userId;
@@ -149,18 +143,17 @@ async function alternarSeguimiento(req, res, next) {
         if (existe.length > 0 ) {
             await db.query('DELETE FROM seguidores WHERE id_seguidor = ? AND id_seguido = ?', [id_seguidor, id_seguido]);
             await db.query(`INSERT INTO notificaciones (tipo_evento, fecha, vista, id_causante, id_dueño, id_publicacion)
-                VALUES ('Dejó de seguirte', NOW(), 0, ?, ?, NULL)`, [id_seguido, id_seguidor]);
+                VALUES ('Dejó de seguirte', NOW(), 0, ?, ?, NULL)`, [id_seguidor, id_seguido]);
         } else {
             await db.query('INSERT INTO seguidores(id_seguidor, id_seguido) VALUES(?, ?)', [id_seguidor, id_seguido]);
             await db.query(`INSERT INTO notificaciones (tipo_evento, fecha, vista, id_causante, id_dueño, id_publicacion)
-                VALUES ('Nuevo seguidor', NOW(), 0, ?, ?, NULL)`, [id_seguido, id_seguidor]);
+                VALUES ('Nuevo seguidor', NOW(), 0, ?, ?, NULL)`, [id_seguidor, id_seguido]);
         }
 
         res.redirect(`/usuario/${id_seguido}/perfil`);
     } catch (error) { next(error); }
 }
 
-/* NOTIFICACIONES --------------------------------------------------------------------------------------------------------- */
 async function notificaciones(req, res, next) {
     try {
         const id = req.session.userId;
@@ -177,7 +170,6 @@ async function notificaciones(req, res, next) {
     } catch (error) { next(); }
 }
 
-/* ACTUALIZAR EL VISTO ---------------------------------------------------------------------------------------------------- */
 async function actualizarVisto(req, res, next) {
     try {
         const id_notificacion = req.params.id;
@@ -190,6 +182,13 @@ async function actualizarVisto(req, res, next) {
     } catch (error) { next(error); }
 }
 
+async function eliminarNotificaciones(req, res, next) {
+    try {
+        await db.query('DELETE FROM notificaciones WHERE id_dueño = ?', [req.session.userId]);
+        res.redirect('/usuario/notificaciones');
+    } catch(error) { next(error); }
+}
+
 module.exports = {
     registrar,
     ingresar,
@@ -199,5 +198,6 @@ module.exports = {
     seguidos,
     alternarSeguimiento,
     notificaciones,
-    actualizarVisto
+    actualizarVisto,
+    eliminarNotificaciones
 };

@@ -35,4 +35,7 @@ router.get('/notificaciones', usuario.notificaciones);
 /* Actualizar visto */
 router.post('/notificaciones/:id/actualizarVisto', usuario.actualizarVisto);
 
+/* Eliminar notificaciones */
+router.get('/notificaciones/eliminar', usuario.eliminarNotificaciones);
+
 module.exports = router;

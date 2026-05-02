@@ -31,7 +31,8 @@ block content
 
             div#acciones
               if (dato.usuario.id !== usuario.id)
-                button(onclick=`actualizarLikes(${dato.publicacion.id})`) ❤️
+                button(onclick=`actualizarLikes(${dato.publicacion.id})`, class="boton-like")
+                  span(id=`emoji-like-${dato.publicacion.id}`)= dato.dioLike ? '❤️' : '🤍'
                   span(id=`likes-pub-${dato.publicacion.id}`)= dato.publicacion.likes
                 button(onclick=`alternarComentarios(${dato.publicacion.id}, ${JSON.stringify(dato.comentarios)})`) 💬
                   span(id=`comentarios-pub-${dato.publicacion.id}`)= dato.cantidad
@@ -69,9 +70,14 @@ block content
 
     // ACTUALIZAR LIKES
     async function actualizarLikes(id) {
-      const res = await fetch(`/publicacion/${id}/like`, { method: 'POST' });
-      const data = await res.json();
-      document.getElementById(`likes-pub-${id}`).innerText = data.likes;
+      try {
+        const res = await fetch(`/publicacion/${id}/like`, { method: 'POST' });
+        const data = await res.json();
+        document.getElementById(`likes-pub-${id}`).innerText = data.likes;
+
+        const spanEmoji = document.getElementById(`emoji-like-${id}`);
+        (spanEmoji.innerText === '❤️') ? spanEmoji.innerText = '🤍' : spanEmoji.innerText = '❤️';
+      } catch(error) { console.error('No se actualizó el Like correctamente', error); }
     }
 
     // MOSTRAR / OCULTAR COMENTARIOS

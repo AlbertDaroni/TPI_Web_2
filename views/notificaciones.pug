@@ -7,6 +7,11 @@ block content
     div.lista-container
         h3 Notificaciones 
         if (notificaciones && notificaciones.length > 0)
+            div.acciones
+                div.botones-acciones
+                    button#boton-marcar-todas(onclick=`actualizarTodasVisto(${notificaciones})`) Marcar todas
+                    a(href='/usuario/notificaciones/eliminar') Eliminar todas
+
             each n in notificaciones 
                 div.notificacion-item(onclick=`location.href='/usuario/${n.id_causante}/perfil'`, class=(n.vista === 0 ? "no-leida" : ""))
                     img(src=n.foto_perfil || "/images/sin_foto_perfil.png")
@@ -14,15 +19,26 @@ block content
                     div.info-notificacion
                         p
                             strong= n.nombre
-                            if (n.tipo_evento === "Interes")
+                            if (n.tipo_evento === "Interés")
                                 |  se interesó en tu publicación 
                                 strong "#{n.titulo}"
                                 br
                                 span Motivo: #{n.motivo}
                             else if (n.tipo_evento === "Nuevo seguidor")
                                 |  comenzó a seguirte.
+                            else if (n.tipo_evento === "Dejó de seguirte")
+                                |  dejó de seguirte.
+                            else if (n.tipo_evento === "Denuncia")
+                                |  hizo una denuncia.
+                                br
+                                br
+                                if (n.id_publicacion)
+                                    a(href=`/#pub-${n-id_publicacion}`) Publicacion denunciada
+                                br
+                                br
+                                |  Motivo: #{n.motivo}
                             else
-                                |  interactuó contigo.
+                                |  interactuó con vos.
                         
                         small= n.fecha.toLocaleDateString() + " " + n.fecha.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
 
@@ -41,12 +57,19 @@ block content
                 const res = await fetch(`/usuario/notificaciones/${id}/actualizarVisto`, { method: 'POST' });
                 const data = await res.json();
 
-                if (data.vista === 1) {
-                    boton_visto.innerText = "✔️";
-                    boton_visto.parentElement.style.backgroundColor = "transparent";
-                } else {
-                    boton_visto.innerText = "✖️";
-                    boton_visto.parentElement.style.backgroundColor = "#f0f7ff";
+                (data.vista === 1) ? boton_visto.innerText = "✖️" : boton_visto.innerText = "✔️";
+            } catch (error) { console.error("Error:", error); }
+        }
+
+        // MARCAR TODAS COMO VISTO
+        async function actualizarTodasVisto(notificaciones) {
+            try {
+                const boton_visto = document.getElementById('boton-marcar-todas');
+
+                for (n of notificaciones) {
+                    const res = await fetch(`/usuario/notificaciones/${n.id}/actualizarVisto`, { method: 'POST' });
+                    const data = await res.json();
+                    (data.vista === 1) ? boton_visto.innerText = "✖️" : boton_visto.innerText = "✔️";
                 }
             } catch (error) { console.error("Error:", error); }
         }

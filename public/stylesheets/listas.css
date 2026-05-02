@@ -71,6 +71,27 @@
 
 .no-leida { background-color: #f0f7ff; }
 
+.acciones { width: 100%; padding: 10px 0; background-color: #ffffff; border-bottom: 1px #dbdbdb; }
+
+.botones-acciones {
+    text-align: center;
+    justify-content: space-around;
+    max-width: 100%;
+    margin: 0 auto;
+    display: flex;
+}
+
+.acciones button, a {
+    text-decoration-line: none;
+    font-size: 100%;
+    padding: 5px 5px;
+    background: #0095f6;
+    color: #dbdbdb;
+    border: #dbdbdb;
+    border-radius: 15px;
+    cursor: pointer;
+}
+
 .vacio, p {
     text-align: center;
     color: var(--text-light);

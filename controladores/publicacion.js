@@ -9,7 +9,12 @@ async function crearPublicacion(req, res, next) {
         } else {
             const { titulo, descripcion, licencia, etiquetas } = req.body;
 
-            if (titulo.trim() === '' || descripcion.trim() === '') { res.render('agregar', { error: 'Campos incompletos' }); }
+            if (titulo.trim() === '' || req.files.length === 0 || etiquetas.length === 0) {
+                res.render('agregar', { error: 'Campos incompletos' });
+            }
+            for (const etiqueta of etiquetas) {
+                if (etiqueta.trim() === '') { res.render('agregar', { error: 'Campos incompletos' }); }
+            }
     
             const [result] = await db.query(`
                 INSERT INTO publicaciones (titulo, descripcion, likes, fecha, denuncias, id_usuario)
@@ -18,24 +23,17 @@ async function crearPublicacion(req, res, next) {
     
             const id_publicacion = result.insertId;
 
-            if (req.files && req.files.length > 0) {
-                for (const imagen of req.files) {
-                    const ruta = `/uploads/${imagen.filename}`;
-                    await db.query(`
-                        INSERT INTO imagenes (imagen, licencia, id_publicacion)
-                        VALUES (?, ?, ?)`, [ruta, licencia, id_publicacion]
-                    );
-                }
-            } else { res.render('agregar', { error: 'Campos incompletos' }); }
+            for (const imagen of req.files) {
+                const ruta = `/uploads/${imagen.filename}`;
+                await db.query(`
+                    INSERT INTO imagenes (imagen, licencia, id_publicacion)
+                    VALUES (?, ?, ?)`, [ruta, licencia, id_publicacion]
+                );
+            }
     
-            if (etiquetas) {
-                for(let etiqueta of etiquetas) {
-                    if (etiqueta.trim() !== "") {
-                        etiqueta = `#${etiqueta}`;
-                        await db.query(`INSERT INTO etiquetas (titulo, id_publicacion)
-                        VALUES (?, ?)`, [etiqueta, id_publicacion]);
-                    } else { res.render('agregar', { error: 'Campos incompletos' }); }
-                }
+            for(const etiqueta of etiquetas) {
+                await db.query(`INSERT INTO etiquetas (titulo, id_publicacion)
+                VALUES (?, ?)`, ['#' + etiqueta, id_publicacion]);
             }
     
             res.redirect('/');
@@ -183,7 +181,7 @@ async function marcarInteres(req, res, next) {
         const id_usuario_dueño = dueño[0].id_usuario;
 
         await db.query(`INSERT INTO notificaciones(tipo_evento, motivo, fecha, vista, id_causante, id_dueño, id_publicacion)
-            VALUES("Interes", ?, NOW(), 0, ?, ?, ?)`, [motivoInteres, id_usuario_interesado, id_usuario_dueño, id_publicacion]);
+            VALUES("Interés", ?, NOW(), 0, ?, ?, ?)`, [motivoInteres, id_usuario_interesado, id_usuario_dueño, id_publicacion]);
 
         res.redirect(`/#pub-${id_publicacion}`);
     } catch (error) { next(); }
