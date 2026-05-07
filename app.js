@@ -9,6 +9,18 @@ const indexRouter = require('./routes/index');
 const usuariosRouter = require('./routes/usuario');
 const publicacionesRouter = require('./routes/publicacion');
 
+const sequelize = require('./config/db');
+const Comentario = require('./models/Comentario');
+const Denuncia = require('./models/Denuncia');
+const Etiqueta = require('./models/Etiqueta');
+const Favorito = require('./models/Favorito');
+const Imagen = require('./models/Imagen');
+const Likes = require('./models/Likes');
+const Mensaje = require('./models/Mensaje');
+const Notificacion = require('./models/Notificacion');
+const Publicacion = require('./models/Publicacion');
+const Usuario = require('./models/Usuario');
+
 const app = express();
 
 // view engine setup
@@ -46,12 +58,17 @@ app.use((req, res, next) => { next(createError(404)); });
 // Manejador de error
 app.use((err, req, res, next) => {
   res.locals.error = req.app.get('env') === 'development' ? err : {};
-
-  // render the error page
-  res.status(err.status || 500);
-  res.render('error');
+  console.error(err);
+  res.status(err.status || 500).render('error');
 });
 
-app.listen(3000);
+sequelize.sync({ alter: true })
+  .then(() => {
+    console.log('Modelos sincronizados con la base de datos')
+
+    const puerto = 3000;
+    app.listen(puerto, () => console.log(`Servidor corriendo en http://localhost:${puerto}`));
+  })
+  .catch(error => console.error('Error al sincronizarse con la base de datos:', error));
 
 module.exports = app;

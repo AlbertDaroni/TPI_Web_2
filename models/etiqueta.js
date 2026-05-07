@@ -1,48 +1,78 @@
-const db = require('../config/db');
+const { DataTypes, Model } = require('sequelize');
+const sequelize = require('../config/db');
+const Publicacion = require('./Publicacion');
 
-async function obtener(id) {
+class Etiqueta extends Model {}
+
+Etiqueta.init(
+    {
+        id: {
+            type: DataTypes.INTEGER,
+            autoIncrement: true,
+            primaryKey: true
+        },
+        nombre: {
+            type: DataTypes.STRING(20),
+            allowNull: false
+        }
+    }, {
+        sequelize,
+        modelName: 'Etiqueta',
+        tableName: 'etiquetas'
+    }
+);
+
+Publicacion.hasMany(Etiqueta, { foreignKey: 'id_publicacion' });
+Etiqueta.belongsTo(Publicacion, { foreignKey: 'id_publicacion' });
+
+module.exports = Etiqueta;
+
+/* async function obtener(id) {
     try {
         const {rows} = await db.query('SELECT * FROM etiquetas WHERE id = $1', [id]);
-        return { etiqueta: rows[0] };
-    } catch (error) { console.log('Error al obtener la etiqueta:', error); }
+        return rows[0];
+    } catch (error) { throw error; }
 }
 
 async function obtenerEtiquetas(id) {
     try {
         const {rows} = await db.query('SELECT * FROM etiquetas WHERE id_publicacion = $1', [id]);
         return rows;
-    } catch (error) { console.error('Error al obtener las etiquetas', error); }
+    } catch (error) { throw error; }
 }
 
 async function crear(etiqueta) {
     try {
-        const {rows} = await db.query(`
+        const tituloFinal = etiqueta.titulo.startsWith('#') ? etiqueta.titulo : '#' + etiqueta.titulo;
+
+        const result = await db.query(`
             INSERT INTO etiquetas(titulo, id_publicacion)
-            VALUES($1, $2)`, ['#' + etiqueta.titulo, etiqueta.id_publicacion]
+            VALUES($1, $2)`, [tituloFinal, etiqueta.id_publicacion]
         );
-        if (rows.affectedRows === 1) { return true; } else { return false; }
-    } catch (error) { console.log('Error al crear la etiqueta:', error); }
+        if (result.rowCount === 1) { return true; } else { return false; }
+    } catch (error) { throw error; }
 }
 
 async function modificar(etiqueta) {
     try {
-        const {rows} = await db.query('UPDATE etiquetas SET titulo = $1 WHERE id_publicacion = $2', [etiqueta.titulo, etiqueta.id_publicacion]);
-        if (rows.affectedRows === 1) { return true; } else { return false; }
-    } catch (error) { console.log('Error al modificar la etiqueta:', error); }
+        const result = await db.query('UPDATE etiquetas SET titulo = $1 WHERE id_publicacion = $2 AND id = $3',
+            [etiqueta.titulo, etiqueta.id_publicacion, etiqueta.id]);
+        if (result.rowCount === 1) { return true; } else { return false; }
+    } catch (error) { throw error; }
 }
 
 async function eliminar(id) {
     try {
-        const {rows} = await db.query('DELETE FROM etiquetas WHERE id = $1', [id]);
-        if (rows.affectedRows === 1) { return true; } else { return false; }
-    } catch (error) { console.log('Error al eliminar la etiqueta:', error); }
+        const result = await db.query('DELETE FROM etiquetas WHERE id = $1', [id]);
+        if (result.rowCount > 0) { return true; } else { return false; }
+    } catch (error) { throw error; }
 }
 
 async function eliminarTodasDeUnaPublicacion(id) {
     try {
-        const {rows} = await db.query('DELETE FROM etiquetas WHERE id_publicacion = $1', [id]);
-        if (rows.affectedRows > 0) { return true; } else { return false; }
-    } catch (error) { console.log('Error al eliminar las etiquetas:', error); }
+        const result = await db.query('DELETE FROM etiquetas WHERE id_publicacion = $1', [id]);
+        if (result.rowCount > 0) { return true; } else { return false; }
+    } catch (error) { throw error; }
 }
 
 module.exports = {
@@ -52,4 +82,4 @@ module.exports = {
     modificar,
     eliminar,
     eliminarTodasDeUnaPublicacion
-};
+}; */

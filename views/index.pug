@@ -30,7 +30,7 @@ block content
               p= dato.publicacion.descripcion
 
             div#acciones
-              if (dato.usuario.id !== usuario.id)
+              if (dato.publicacion.id_usuario !== usuario.id)
                 button(onclick=`actualizarLikes(${dato.publicacion.id})`, class="boton-like")
                   span(id=`emoji-like-${dato.publicacion.id}`)= dato.dioLike ? '❤️' : '🤍'
                   span(id=`likes-pub-${dato.publicacion.id}`)= dato.publicacion.likes

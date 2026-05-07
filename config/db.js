@@ -1,11 +1,22 @@
-const { Pool } = require('pg');
+const { Sequelize } = require('sequelize');
 
-const pool = new Pool({
-  user: 'postgres',
-  host: 'localhost',
-  database: 'tpi_web2',
-  password: 'admin123',
-  port: 5432,
+const sequelize = new Sequelize('tpi_web2', 'postgres', 'admin123', {
+    host: 'localhost',
+    dialect: 'postgres',
+    logging: false,
+    pool: {
+      max: 100,
+      min: 0,
+      acquire: 30000,
+      idle: 10000
+    }
 });
 
-module.exports = { query: (text, params) => pool.query(text, params) };
+async () => {
+  try {
+    await sequelize.authenticate();
+    console.log('Conexión a PostgreSQL con Sequelize establecida');
+  } catch (error) { console.error('No se pudo conectar a la base de datos:', error); }
+};
+
+module.exports = sequelize;

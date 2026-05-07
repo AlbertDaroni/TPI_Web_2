@@ -1,20 +1,23 @@
-const usuario = require('../models/usuario');
-const denuncia = require('../models/denuncia');
-const publicacion = require('../models/publicacion');
-const notificacion = require('../models/notificaciones');
+const Usuario = require('../models/Usuario');
+const denuncia = require('../models/Denuncia');
+const Publicacion = require('../models/Publicacion');
+const Notificacion = require('../models/Notificacion');
 
 async function contenidoPaginaPrincipal(req, res, next) {
     try {
-        if (!control(req, next)) { res.render('notificaciones'); }
-        const publicaciones = await publicacion.obtener10Publicaciones();
-        const filas = await usuario.obtenerPorID(req.session.userId);
-        res.render('index', { datos: publicaciones, usuario: filas[0] });
+        const esValido = await controlDeDenuncias(req, next);
+        if (!esValido) { res.render('notificaciones'); }
+
+        const publicaciones = await Publicacion.obtener10Publicaciones(req.session.userId);
+        const filas = await Usuario.obtenerPorID(req.session.userId);
+        
+        res.render('index', { datos: publicaciones, usuario: { ...filas[0], id: req.session.userId } });
     } catch (error) { next(error); }
 }
 
-async function control(req, next) {
+async function controlDeDenuncias(req, next) {
     try {
-        const publicaciones = await publicacion.obtenerPublicacionesDeUnUsuario(req.session.userId);
+        const publicaciones = await Publicacion.obtenerPublicacionesDeUnUsuario(req.session.userId, req.session.userId);
         let pasa = true;
 
         for (let i = 0; i < publicaciones.length; i++) {
@@ -28,7 +31,7 @@ async function control(req, next) {
                         "id_dueño": publicaciones[i].publicacion.id_usuario,
                         "id_publicacion": publicaciones[i].publicacion.id
                     }
-                    await notificacion.crear(nuevaNotificacion);
+                    await Notificacion.crear(nuevaNotificacion);
                 }
             }
 
@@ -42,12 +45,18 @@ async function control(req, next) {
                         "id_dueño": publicaciones[i].publicacion.id_usuario,
                         "id_publicacion": publicaciones[i].publicacion.id
                     }
-                    await notificacion.crear(nuevaNotificacion);
+                    await Notificacion.crear(nuevaNotificacion);
                 }
             }
         }
 
         return pasa;
+    } catch (error) { next(error); }
+}
+
+async function controlDeContenido(req, res, next) {
+    try {
+        
     } catch (error) { next(error); }
 }
 
