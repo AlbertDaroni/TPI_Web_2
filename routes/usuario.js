@@ -13,29 +13,32 @@ router.post('/ingresar', usuario.ingresar);
 
 router.use(protegerRuta);
 
-/* Perfil */
-router.get('/:id/perfil', usuario.perfil);
-
 /* Modificar perfil */
 router.get('/modificar', usuario.modificar);
 router.post('/modificar', upload.single('imagen'), usuario.modificar);
+
+/* Chats */
+router.get('/chats', usuario.chats);
+
+/* Notificaciones */
+router.get('/notificaciones', usuario.notificaciones);
+
+/* Eliminar notificaciones */
+router.get('/notificaciones/eliminar', usuario.eliminarNotificaciones);
+
+/* Seguir / Dejar de seguir */
+router.post('/perfil/seguir/:id', usuario.alternarSeguimiento);
+
+/* Actualizar visto */
+router.post('/notificaciones/:id/actualizarVisto', usuario.actualizarVisto);
+
+/* Perfil */
+router.get('/:id/perfil', usuario.perfil);
 
 /* Ver seguidos */
 router.get('/:id/seguidos', usuario.seguidos);
 
 /* Ver seguidores */
 router.get('/:id/seguidores', usuario.seguidores);
-
-/* Seguir / Dejar de seguir */
-router.post('/perfil/seguir/:id', usuario.alternarSeguimiento);
-
-/* Notificaciones */
-router.get('/notificaciones', usuario.notificaciones);
-
-/* Actualizar visto */
-router.post('/notificaciones/:id/actualizarVisto', usuario.actualizarVisto);
-
-/* Eliminar notificaciones */
-router.get('/notificaciones/eliminar', usuario.eliminarNotificaciones);
 
 module.exports = router;

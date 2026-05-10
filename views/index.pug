@@ -8,59 +8,59 @@ block content
     if (datos && datos.length > 0)
       each dato in datos 
         div.contenedor-post
-          div.publicacion(id=`pub-${dato.publicacion.id}`)
-            div.perfil-header(onclick=`location.href="/usuario/${dato.usuario.id}/perfil"`)
-              img(src=dato.usuario.foto_perfil || "/images/sin_foto_perfil.png", width="40")
-              h5= dato.usuario.nombre
+          div.publicacion(id=`pub-${dato.id}`)
+            div.perfil-header(onclick=`location.href="/usuario/${dato.Usuario.id}/perfil"`)
+              img(src=dato.Usuario.foto_perfil, width="40")
+              h5= dato.Usuario.nombre
 
             div.cuerpo-publicacion
               div.foto-seccion
-                div(id=`imagen-container-${dato.publicacion.id}`)
-                  img.main-img(src=dato.imagenes[0].imagen || "/images/sin_imagen.png", style="width: 100%")
-                  p= (dato.imagenes[0].licencia === 0) ? 'Imagen sin licencia' : 'Imagen con licencia'
+                div(id=`imagen-container-${dato.id}`)
+                  img.main-img(src=dato.Imagens[0].imagen, style="width: 100%")
+                  p= (dato.Imagens[0].licencia === 0) ? 'Imagen sin licencia' : 'Imagen con licencia'
                 
-                if (dato.imagenes.length > 1)
-                  button(onclick=`mover(${dato.publicacion.id}, -1, ${JSON.stringify(dato.imagenes)})`) ◀️
-                  span(id=`pos-${dato.publicacion.id}`) 1 / #{dato.imagenes.length}
-                  button(onclick=`mover(${dato.publicacion.id}, 1, ${JSON.stringify(dato.imagenes)})`) ▶️
+                if (dato.Imagens.length > 1)
+                  button(onclick=`mover(${dato.id}, -1, ${JSON.stringify(dato.Imagens)})`) ◀️
+                  span(id=`pos-${dato.id}`) 1 / #{dato.Imagens.length}
+                  button(onclick=`mover(${dato.id}, 1, ${JSON.stringify(dato.Imagens)})`) ▶️
 
             div#informacion
-              h5= dato.publicacion.titulo
-              p= dato.publicacion.fecha.toLocaleDateString()
-              p= dato.publicacion.descripcion
+              h5= dato.titulo
+              p= dato.createdAt.toLocaleDateString()
+              p= dato.descripcion
 
             div#acciones
-              if (dato.publicacion.id_usuario !== usuario.id)
-                button(onclick=`actualizarLikes(${dato.publicacion.id})`, class="boton-like")
-                  span(id=`emoji-like-${dato.publicacion.id}`)= dato.dioLike ? '❤️' : '🤍'
-                  span(id=`likes-pub-${dato.publicacion.id}`)= dato.publicacion.likes
-                button(onclick=`alternarComentarios(${dato.publicacion.id}, ${JSON.stringify(dato.comentarios)})`) 💬
-                  span(id=`comentarios-pub-${dato.publicacion.id}`)= dato.cantidad
-                button(onclick=`guardarPublicacion(${dato.publicacion.id})`) 📁
-                button(onclick=`marcarInteres(${dato.publicacion.id})`) ⭐
-                a(href=`/publicacion/${dato.publicacion.id}/denunciar`) 🚩
+              if (dato.id_usuario !== usuario.id)
+                button(onclick=`actualizarLikes(${dato.id})`, class="boton-like")
+                  span(id=`emoji-like-${dato.id}`)= dato.dioLike ? '❤️' : '🤍'
+                  span(id=`likes-pub-${dato.id}`)= dato.likes
+                button(onclick=`alternarComentarios(${dato.id}, ${JSON.stringify(dato.Comentarios)})`) 💬
+                  span(id=`comentarios-pub-${dato.id}`)= dato.cantidad
+                button(onclick=`guardarPublicacion(${dato.id})`) 📁
+                button(onclick=`marcarInteres(${dato.id})`) ⭐
+                a(href=`/publicacion/${dato.id}/denunciar`) 🚩
               else
                 button(type="button") ❤️
-                  span(id=`likes-pub-${dato.publicacion.id}`)= dato.publicacion.likes
-                button(onclick=`alternarComentarios(${dato.publicacion.id}, ${JSON.stringify(dato.comentarios)})`) 💬
-                  span(id=`comentarios-pub-${dato.publicacion.id}`)= dato.cantidad
+                  span(id=`likes-pub-${dato.id}`)= dato.likes
+                button(onclick=`alternarComentarios(${dato.id}, ${JSON.stringify(dato.Comentarios)})`) 💬
+                  span(id=`comentarios-pub-${dato.id}`)= dato.cantidad
             
-            div(id=`guardarPublicacion-${dato.publicacion.id}`, style="display: none;")
-              form(action=`/publicacion/${dato.publicacion.id}/guardar`, method="post")
+            div(id=`guardarPublicacion-${dato.id}`, style="display: none;")
+              form(action=`/publicacion/${dato.id}/guardar`, method="post")
                 input(type="text", name="nombreLista", placeholder="Nombre de la lista", required) 
                 button(type="submit") 📩
 
-            div(id=`motivo-interes-${dato.publicacion.id}`, style="display: none;")
-              form(action=`/publicacion/${dato.publicacion.id}/marcarInteres`, method="post") 
+            div(id=`motivo-interes-${dato.id}`, style="display: none;")
+              form(action=`/publicacion/${dato.id}/marcarInteres`, method="post") 
                 textarea(name="motivoInteres", cols="30", rows="5", placeholder="Escribí el motivo de tu interés", required)
                 button(type="submit") 📩
 
-          div(id=`seccion-comentarios-${dato.publicacion.id}`, style="display: none;")
+          div(id=`seccion-comentarios-${dato.id}`, style="display: none;")
             div.form-comentario
-              form(id=`form-agregar-comentario-${dato.publicacion.id}`, action=`/publicacion/${dato.publicacion.id}/comentario/agregar`, method="post") 
+              form(id=`form-agregar-comentario-${dato.id}`, action=`/publicacion/${dato.id}/comentario/agregar`, method="post") 
                 textarea(name='comentario', cols="30", rows="5", placeholder="Escribí un comentario...")
                 button(type="submit") Comentar
-            div(id=`lista-comentarios-pub-${dato.publicacion.id}`)  
+            div(id=`lista-comentarios-pub-${dato.id}`)  
     else
       h2 Aún no hay publicaciones
       p ¡Creá la tuya!
@@ -91,7 +91,7 @@ block content
         comentarios.forEach(comentario => {
           const esMio = comentario.id_usuario === id_usuario;
           const id_comentario = comentario.id;
-          const foto_perfil = comentario.usuario.foto_perfil || "/images/sin_foto_perfil.png";
+          const foto_perfil = comentario.usuario.foto_perfil;
           const nombre = comentario.usuario.nombre;
           const texto = comentario.comentario;
 

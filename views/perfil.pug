@@ -7,11 +7,11 @@ block content
     mixin renderLista(lista)
         if (lista && lista.length > 0)
             each pub in lista 
-                div.publicacion-mini(onclick=`location.href='/#pub-${pub.publicacion.id}'`)
-                    img(src=pub.imagenes[0].imagen || "/images/sin_imagen.png")
+                div.publicacion-mini(onclick=`location.href='/#pub-${pub.id}'`)
+                    img(src=pub.Imagens[0].imagen)
                     
                     div.overlay
-                        span ❤️ #{pub.publicacion.likes}
+                        span ❤️ #{pub.likes}
                         span 💬 #{pub.cantidad}
         else 
             p.sin-contenido Aún no hay publicaciones
@@ -19,7 +19,7 @@ block content
     div#contenido
         header#datos-principales
             div#imagen 
-                img(src=usuario.foto_perfil || "/images/sin_foto_perfil.png")
+                img(src=usuario.foto_perfil)
             
             section#datos
                 div.fila-usuario

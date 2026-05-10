@@ -24,9 +24,4 @@ Mensaje.init(
     }
 );
 
-Usuario.hasMany(Mensaje, { foreignKey: 'id_usuario', as: 'MensajesEnviados' });
-Usuario.hasOne(Mensaje, { foreignKey: 'id_seguido', as: 'MensajesRecibidos' });
-Mensaje.belongsTo(Usuario, { foreignKey: 'id_usuario', as: 'Emisor' });
-Mensaje.belongsTo(Usuario, { foreignKey: 'id_seguido', as: 'Receptor' });
-
 module.exports = Mensaje;

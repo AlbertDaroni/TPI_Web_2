@@ -1,126 +1,80 @@
-const imagen = require('../models/Imagen');
+const Imagen = require('../models/Imagen');
 const Etiqueta = require('../models/Etiqueta');
 const Denuncia = require('../models/Denuncia');
 const Favorito = require('../models/Favorito');
-const Comentario = require('../models/Comentario');
 const Publicacion = require('../models/Publicacion');
 const Notificacion = require('../models/Notificacion');
 
-async function crearPublicacion(req, res, next) {
+async function crear(req, res, next) {
     try {
         const id = req.session.userId;
-        if (req.method === 'GET') {
-            res.render('agregar', { id });
-        } else {
-            const { titulo, descripcion, licencia, etiquetas } = req.body;
+        if (req.method === 'GET') return res.render('agregar', { id });
 
-            if (titulo.trim() === '' || req.files.length === 0 || etiquetas.length === 0) { res.render('agregar', { error: 'Campos incompletos' }); }
-            for (const etiqueta of etiquetas) { if (etiqueta.trim() === '') { res.render('agregar', { error: 'Campos incompletos' }); } }
+        const { titulo, descripcion, licencia, etiquetas } = req.body;
+
+        if (!titulo  || !licencia || req.files.length === 0 || etiquetas.length === 0) { res.render('agregar', { error: 'Campos incompletos' }); }
+        for (const etiqueta of etiquetas) { if (!etiqueta) { res.render('agregar', { error: 'Campos incompletos' }); } }
             
-            const nuevaPublicacion = await Publicacion.crear({ "titulo": titulo, "descripcion": descripcion, "id_usuario": id });
-            const id_publicacion = nuevaPublicacion.id;
+        const nuevaPublicacion = await Publicacion.create({ titulo: titulo, descripcion: descripcion, id_usuario: id });
+        const nuevasImagenes = req.files.map(i => { Imagen.create({ imagen: `/uploads/${i.filename}`, licencia, id_publicacion: nuevaPublicacion.id }); });
+        const listaEtiquetas = Array.isArray(etiquetas) ? etiquetas : [etiquetas];
+        const nuevasEtiquetas = listaEtiquetas.map(e => { Etiqueta.create({ nombre: e.startsWith('#') ? e : '#' + e, id_publicacion: nuevaPublicacion.id }); });
 
-            for (const i of req.files) { await imagen.crear({ "imagen": `/uploads/${i.filename}`, "licencia": licencia, "id_publicacion": id_publicacion }); }
-            for(const e of etiquetas) { await Etiqueta.crear({ "titulo": e, "id_publicacion": id_publicacion }); }
-    
-            res.redirect('/');
-        }
+        await Promise.all([...nuevasImagenes, ...nuevasEtiquetas]);
+        res.redirect('/');
     } catch (error) { next(error); }
 }
 
-async function agregarComentario(req, res, next) {
+async function modificar(req, res, next) {
     try {
-        const texto = req.body.comentario;
+        const { titulo, descripcion, etiquetas, imagenes } = req.body;
         const id_publicacion = req.params.id;
-        const id = req.session.userId;
-        
-        if (texto.trim() === '' || isNaN(Number(id_publicacion))) { return res.status(400).json({ error: 'Texto vacío' }); }
 
-        await Comentario.crear({ "comentario": texto, "id_publicacion": id_publicacion, "id_usuario": id });
+        if (!titulo || etiquetas.length === 0 || imagenes.length === 0 || isNaN(Number(id_publicacion))) 
+            { res.render('modificarPublicacion', { error: 'Datos inválidos' }); }
+
+        await Publicacion.update({ titulo: titulo, descripcion: descripcion }, { where: { id: id_publicacion } });
+        for (const img of imagenes) {
+            await Imagen.update({ imagen: img.imagen, licencia: img.licencia, copyright: img.copyright },
+                { where: { id_publicacion: id_publicacion } });
+        }
+        for (const tag of etiquetas) {
+            await Etiqueta.update({ nombre: tag.nombre },
+                { where: { id_publicacion: id_publicacion } });
+        }
 
         res.redirect(`/#pub-${id_publicacion}`);
     } catch (error) { next(error); }
 }
 
-async function modificarComentario(req, res, next) {
-    try {
-        const { id_publicacion, id_comentario} = req.params;
-        const texto = req.body.comentario;
-
-        if (texto.trim() === '' || isNaN(Number(id_publicacion)) || isNaN(Number(id_comentario))) { return res.status(400).json({ error: 'Datos inválidos' }); }
-
-        const viejoComentario = await Comentario.obtener(id_comentario);
-        await Comentario.modificar({ "comentario": texto, "denuncias": viejoComentario.denuncias, "id": id_comentario });
-        res.redirect(`/#pub-${id_publicacion}`);
-    } catch (error) { next(error); }
-}
-
-async function denunciarPublicacion(req, res, next) {
-    try {
-        if (req.method === 'GET') {
-            if (isNaN(Number(req.params.id))) { res.render('denuncia', { error: 'Dato inválido' }); }
-            res.render('denuncia', { id_publicacion: req.params.id });
-        } else {
-            const id_dueño = req.session.userId;
-            const descripcion = req.body.descripcion;
-            const id_publicacion = req.params.id;
-
-            if (descripcion.trim() === '' || isNaN(Number(id_publicacion))) { return res.status(400).json({ error: 'Datos inválidos' }); }
-            
-            await Denuncia.crear({ "descripcion": descripcion, "id_publicacion": id_publicacion });
-            await Publicacion.actualizarDenuncias("suma", id_publicacion);
-            const usuarioDueño = await Publicacion.obtenerDueño(id_publicacion);
-            await Notificacion.crear({ "tipo_evento": 'Denuncia', "motivo": descripcion, "id_causante": id_dueño, "id_dueño": usuarioDueño, "id_publicacion": id_publicacion });
-            
-            res.redirect(`/#pub-${id_publicacion}`);
-        }
-    } catch (error) { next(error); }
-}
-
-async function denunciarComentario(req, res, next) {
-    try {
-        if (req.method === 'GET') {
-            if (isNaN(Number(req.params.id))) return;
-            res.render('denuncia', { id_comentario: req.params.id });
-        } else {
-            const id_dueño = req.session.userId;
-            const descripcion = req.body.descripcion;
-            const id_comentario = req.params.id;
-    
-            if (descripcion.trim() === '' || isNaN(Number(id_comentario))) { return res.status(400).json({ error: 'Datos inválidos' }); }
-
-            await Denuncia.crear({ "descripcion": descripcion, "id_comentario": id_comentario });
-            await Comentario.actualizarDenuncias("suma", id_comentario);
-            const usuarioDueño = await Comentario.obtenerDueño(id_comentario);
-            await Notificacion.crear({ "tipo_evento": 'Denuncia', "motivo": descripcion, "id_causante": id_dueño, "id_dueño": usuarioDueño });
-            const id_publicacion = await Comentario.obtenerPublicacionCorrespondiente(id_comentario);
-
-            res.redirect(`/#pub-${id_publicacion}`);
-        }
-    } catch (error) { next(error); }
-}
-
-async function eliminarPublicacion(req, res, next) {
+async function eliminar(req, res, next) {
     try {
         const id_publicacion = req.params.id;
         const id_usuario = req.session.userId;
 
         if (isNaN(Number(id_publicacion))) { return res.status(400).json({ error: 'Dato inválido' }); }
 
-        await Publicacion.eliminar(id_publicacion);
+        await Publicacion.destroy({ where: { id: id_publicacion } });
 
         res.redirect(`/usuario/${id_usuario}/perfil`);
     } catch (error) { next(error); }
 }
 
-async function eliminarComentario(req, res, next) {
+async function denunciar(req, res, next) {
     try {
-        const id_comentario = req.params.id_comentario;
-        const id_publicacion = req.params.id_publicacion;
+        if (req.method === 'GET') return res.render('denuncia', { id_publicacion: req.params.id });
+        
+        const id_dueño = req.session.userId;
+        const motivo = req.body.descripcion;
+        const id_publicacion = req.params.id;
 
-        if (isNaN(Number(id_comentario)) || isNaN(Number(id_publicacion))) { res.status(400).json({ error: 'Datos inválidos' }); }
-
-        await Comentario.eliminar(id_comentario);
+        if (!motivo || isNaN(Number(id_publicacion))) { return res.status(400).json({ error: 'Datos inválidos' }); }
+            
+        const publicacion = await Publicacion.findByPk(id_publicacion);
+        await publicacion.increment('denuncias', { by: 1 });
+        await Denuncia.create({ motivo: motivo, id_publicacion: id_publicacion });
+        await Notificacion.create({ tipo_evento: 'Denuncia', motivo: motivo, id_causante: id_dueño, id_dueño: publicacion.id_usuario, id_publicacion: id_publicacion });
+            
         res.redirect(`/#pub-${id_publicacion}`);
     } catch (error) { next(error); }
 }
@@ -129,19 +83,19 @@ async function marcarInteres(req, res, next) {
     try {
         const id_publicacion = req.params.id;
         const id_usuario_interesado = req.session.userId;
-        const motivoInteres = req.body.motivoInteres;
+        const motivo = req.body.motivoInteres;
 
-        if (isNaN(Number(id_publicacion)) || motivoInteres.trim() === '') { res.status(400).json({ error: 'Datos inválidos' }); }
+        if (isNaN(Number(id_publicacion)) || motivo.trim() === '') { res.status(400).json({ error: 'Datos inválidos' }); }
         
-        const dueño = await Publicacion.obtenerPorID(id_publicacion);
-        const id_usuario_dueño = dueño[0].id_usuario;
-        await Notificacion.crear({ "tipo_evento": 'Interés', "motivo": motivoInteres, "id_causante": id_usuario_interesado, "id_dueño": id_usuario_dueño, "id_publicacion": id_publicacion });
+        const publicacion = await Publicacion.findByPk(id_publicacion);
+        const id_usuario_dueño = publicacion.id_usuario;
+        await Notificacion.create({ tipo_evento: 'Interés', motivo: motivo, id_causante: id_usuario_interesado, id_dueño: id_usuario_dueño, id_publicacion: id_publicacion });
 
         res.redirect(`/#pub-${id_publicacion}`);
     } catch (error) { next(error); }
 }
 
-async function guardarPublicacion(req, res, next) {
+async function guardar(req, res, next) {
     try {
         const id_publicacion = req.params.id;
         const id_usuario = req.session.userId;
@@ -149,19 +103,16 @@ async function guardarPublicacion(req, res, next) {
 
         if (isNaN(Number(id_publicacion)) || nombreLista.trim() === '') { res.status(400).json({ error: 'Datos inválidos' }); }
 
-        await Favorito.crear({ "nombre": nombreLista, "id_publicacion": id_publicacion, "id_usuario": id_usuario });
+        await Favorito.create({ nombre: nombreLista, id_publicacion: id_publicacion, id_usuario: id_usuario });
         res.redirect(`/#pub-${id_publicacion}`);
     } catch (error) { next(error); }
 }
 
 module.exports = {
-    crearPublicacion,
-    agregarComentario,
-    modificarComentario,
-    denunciarPublicacion,
-    denunciarComentario,
-    eliminarPublicacion,
-    eliminarComentario,
+    crear,
+    modificar,
+    eliminar,
+    denunciar,
     marcarInteres,
-    guardarPublicacion
-};
+    guardar
+}

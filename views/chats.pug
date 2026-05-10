@@ -1,0 +1,49 @@
+extends layout 
+
+block estilo 
+
+block content 
+    mixin mostrarMensajes(id, mensajes)
+        const 
+
+    div#contenedor 
+        form#form-busqueda(action="/buscarSeguido", method="post") 
+            input#input-buscador(type="text", name="nombre", placeholder="Ingresá el nombre...") 
+
+        if (seguidos && seguidos.length > 0) 
+            div(id="contenedor-seguidos") 
+                each s in seguidos 
+                    div(onclick=`${+mostrarMensajes(s.id, mensajes)}`) 
+                        img(src=s.foto_perfil) 
+                        h3= s.nombre 
+
+        div(id="contenedor-mensajes", style="display: none;") 
+            div(id="nuevoMensaje-form") 
+                form(action=`/usuario/mensaje/crear/seguido/${}`, method="post") 
+                    input(type="text", name="texto", placeholder="Escribí un mensaje...") 
+                    button(type="submit") ⬆️
+
+    script.
+        function mostrarMensajes(id, mensajes) {
+            const contenedor_mensajes = document.getElementById('contenedor-mensajes');
+            const mensajesSeguido = mensajes.find(m => m.id_seguido === id);
+            let html = '';
+            
+            mensajesSeguido.forEach(m => {
+                html = `
+                    <div id="mensajes">
+                        <div>
+                            <p>${m.createdAt}</p>
+                            <p>${m.texto}</p>
+                        </div>
+                        <div id="acciones">
+                            <form accion="/mensaje/${m.id}/eliminar" method="post"><button type="submit">🗑️</button></form>
+                            <form accion="/mensaje/${m.id}/modificar" method="post"><button type="submit">✏️</button></form>
+                        </div>
+                    </div>
+                `;
+            });
+
+            contenedor_mensajes.appendChild(html);
+            contenedor_mensajes.style.display === 'none' ? 'block' : 'none';
+        }

@@ -13,6 +13,9 @@ router.get('/cerrar-sesion', (req, res) => { req.session.destroy(() => res.redir
 /* Página principal */
 router.get('/', controlador.contenidoPaginaPrincipal);
 
+/* Buscar un usuario o publicación */
+router.get('/buscar', controlador.buscar);
+
 /* Actualizar Likes */
 router.post('/publicacion/:id/like', async (req, res, next) => {
     try {
@@ -20,8 +23,5 @@ router.post('/publicacion/:id/like', async (req, res, next) => {
         res.json({ likes: resultado.totalLikes });
     } catch (error) { next(error); }
 });
-
-/* Buscar un usuario o publicación */
-// router.get('/buscar', controlador.buscar);
 
 module.exports = router;

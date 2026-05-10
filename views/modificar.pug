@@ -8,7 +8,7 @@ block content
         h2 Editar Perfil
         form.edit-form(action=`/usuario/modificar`, method="post", enctype="multipart/form-data") 
             div.foto-edit-seccion
-                img(src=usuario.foto_perfil || "/images/sin_foto_perfil.png")
+                img(src=usuario.foto_perfil)
                 div.campo-grupo
                     label(for="imagen") Cambiar foto de perfil
                     input(type="file", name="imagen", accept="image/*")
@@ -26,7 +26,7 @@ block content
 
             div.campo-grupo
                 label(for="contraseña") Contraseña
-                input(type="text", name="contraseña", value=usuario.contraseña, required)
+                input(type="text", name="contrasena", value=usuario.contraseña, required)
 
             div.campo-grupo
                 label(for="descripcion") Descripción

@@ -14,7 +14,7 @@ block content
 
             each n in notificaciones 
                 div.notificacion-item(onclick=`location.href='/usuario/${n.id_causante}/perfil'`, class=(n.vista === 0 ? "no-leida" : ""))
-                    img(src=n.foto_perfil || "/images/sin_foto_perfil.png")
+                    img(src=n.Causante.foto_perfil)
                     
                     div.info-notificacion
                         p

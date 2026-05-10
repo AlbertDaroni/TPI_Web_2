@@ -2,37 +2,38 @@ const express = require('express');
 const router = express.Router();
 const { protegerRuta, upload } = require('../config/middlewares');
 const publicacion = require('../controladores/publicacion');
+const comentario = require('../controladores/comentario');
 
 router.use(protegerRuta);
 
-/* Denunciar publicación */
-router.get('/:id/denunciar', publicacion.denunciarPublicacion);
-router.post('/:id/denunciar', publicacion.denunciarPublicacion);
+/* Crear publicación */
+router.get('/agregar', publicacion.crear);
+router.post('/agregar', upload.array('imagenes', 5), publicacion.crear);
 
 /* Denunciar comentario */
-router.get('/comentario/:id/denunciar', publicacion.denunciarComentario);
-router.post('/comentario/:id/denunciar', publicacion.denunciarComentario);
+router.get('/comentario/:id/denunciar', comentario.denunciar);
+router.post('/comentario/:id/denunciar', comentario.denunciar);
 
-/* Crear publicación */
-router.get('/agregar', publicacion.crearPublicacion);
-router.post('/agregar', upload.array('imagenes', 5), publicacion.crearPublicacion);
+/* Denunciar publicación */
+router.get('/:id/denunciar', publicacion.denunciar);
+router.post('/:id/denunciar', publicacion.denunciar);
 
 /* Eliminar publicación */
-router.post('/:id/eliminar', publicacion.eliminarPublicacion);
+router.post('/:id/eliminar', publicacion.eliminar);
 
 /* Crear comentario */
-router.post('/:id/comentario/agregar', publicacion.agregarComentario);
+router.post('/:id/comentario/agregar', comentario.crear);
 
 /* Modificar comentario */
-router.post('/:id_publicacion/comentario/:id_comentario/modificar', publicacion.modificarComentario);
+router.post('/:id_publicacion/comentario/:id_comentario/modificar', comentario.modificar);
 
 /* Eliminar comentario */
-router.post('/:id_publicacion/comentario/:id_comentario/eliminar', publicacion.eliminarComentario);
+router.post('/:id_publicacion/comentario/:id_comentario/eliminar', comentario.eliminar);
 
 /* Marcar interés */
 router.post('/:id/marcarInteres', publicacion.marcarInteres);
 
 /* Guardar publicación */
-router.post('/:id/guardar', publicacion.guardarPublicacion);
+router.post('/:id/guardar', publicacion.guardar);
 
 module.exports = router;

@@ -1,26 +1,23 @@
 const { DataTypes, Model } = require('sequelize');
 const sequelize = require('../config/db');
-const Usuario = require('./Usuario');
 const Publicacion = require('./Publicacion');
 
-class Likes extends Model {}
+class Validador extends Model {}
 
-Likes.init(
+Validador.init(
     {
         id: {
             type: DataTypes.INTEGER,
             autoIncrement: true,
             primaryKey: true
-        },
-        id_usuario: {
-            type: DataTypes.INTEGER,
-            allowNull: false
         }
     }, {
         sequelize,
-        modelName: 'Likes',
-        tableName: 'likes'
+        timestamps: true,
+        paranoid: true,
+        modelName: 'Validador',
+        tableName: 'validador'
     }
 );
 
-module.exports = Likes;
+module.exports = Validador;
