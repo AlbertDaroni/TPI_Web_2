@@ -1,0 +1,154 @@
+/* --- Contenedor Principal --- */
+#contenido { 
+    max-width: 935px;
+    margin: 30px auto; 
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: #ffffff;
+    border: 1px solid #dbdbdb;
+    border-radius: 3px;
+    padding: 20px;
+}
+
+#contenido h2 {
+    font-size: 22px;
+    font-weight: 300;
+    color: #262626;
+    margin-bottom: 20px;
+    padding-left: 10px;
+}
+
+/* --- Sistema de Pestañas (Botones) --- */
+#secciones-botones {
+    margin-bottom: 25px;
+    border-bottom: 1px solid #dbdbdb;
+}
+
+#secciones-botones .tab-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 40px; /* Separación estética entre opciones */
+}
+
+#secciones-botones .tab-buttons button {
+    background: none;
+    border: none;
+    padding: 12px 0;
+    cursor: pointer;
+    color: #8e8e8e;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    transition: color 0.2s, border-color 0.2s;
+    border-bottom: 2px solid transparent;
+}
+
+#secciones-botones .tab-buttons button h3 {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+/* Clase de utilidad para cuando agregues lógica JS de pestaña activa */
+#secciones-botones .tab-buttons button.active,
+#secciones-botones .tab-buttons button:hover {
+    color: #262626;
+    border-bottom: 2px solid #262626; /* Línea negra clásica de pestaña seleccionada */
+}
+
+/* --- Secciones de Contenido --- */
+#secciones { padding: 10px; }
+
+/* Grilla para Publicaciones (3 columnas perfectas) */
+#seccion-publicaciones {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 28px; /* Espaciado cuadrado típico de la grilla */
+}
+
+/* Lista para Usuarios */
+#seccion-usuarios {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+/* --- Elementos de Resultado Individuales --- */
+
+/* Comportamiento genérico del contenedor clickable */
+.resultado {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    background-color: #ffffff;
+    transition: background-color 0.2s;
+}
+
+#seccion-usuarios .resultado {
+    padding: 10px 15px;
+    border: 1px solid #e6e6e6;
+    border-radius: 4px;
+    gap: 15px;
+}
+
+#seccion-usuarios .resultado:hover { background-color: #fafafa; }
+
+#seccion-usuarios .resultado span {
+    font-weight: 600;
+    color: #262626;
+    font-size: 14px;
+}
+
+#foto-perfil { 
+    width: 44px;
+    height: 44px;
+    border-radius: 50%; 
+    object-fit: cover; 
+    border: 1px solid #dbdbdb;
+}
+
+#seccion-publicaciones .resultado {
+    position: relative;
+    display: block;
+    aspect-ratio: 1 / 1;
+    overflow: hidden;
+    background-color: black;
+}
+
+.publicacion-mini {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: opacity 0.3s, transform 0.3s;
+}
+
+#seccion-publicaciones .resultado:hover .publicacion-mini { opacity: 0.8; transform: scale(1.02); }
+
+/* Título oculto en la miniatura, visible solo al pasar el mouse (opcional/estético) */
+#seccion-publicaciones .resultado span {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.6);
+    color: #ffffff;
+    font-size: 12px;
+    padding: 8px;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+#seccion-publicaciones .resultado:hover span { opacity: 1; }
+
+/* --- Mensaje Sin Resultados --- */
+#secciones p {
+    text-align: center;
+    color: #8e8e8e;
+    font-size: 16px;
+    margin-top: 40px;
+}

@@ -1,7 +1,5 @@
 const { DataTypes, Model } = require('sequelize');
 const sequelize = require('../config/db');
-const Publicacion = require('./Publicacion');
-const Usuario = require('./Usuario');
 
 class Notificacion extends Model {}
 

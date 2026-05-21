@@ -24,7 +24,7 @@ Usuario.init(
             validate: { isEmail: true },
             allowNull: false
         },
-        contraseña: {
+        contrasena: {
             type: DataTypes.STRING,
             allowNull: false
         }, 

@@ -1,9 +1,12 @@
 const multer = require('multer');
 const path = require('path');
+const { Usuario } = require('../models/index');
 
 /* MIDDLEWARE de verificador de sesión */
-const protegerRuta = (req, res, next) => {
-    if (!req.session.userId) return res.redirect('/usuario/ingresar');
+const protegerRuta = async (req, res, next) => {
+    const usuario = await Usuario.findByPk(req.session.userId);
+    if (usuario) { res.locals.userIdSesion = req.session.userId; }
+    else { res.locals.userIdSesion = null; }
     next();
 };
 

@@ -14,6 +14,12 @@ router.post('/agregar', upload.array('imagenes', 5), publicacion.crear);
 router.get('/comentario/:id/denunciar', comentario.denunciar);
 router.post('/comentario/:id/denunciar', comentario.denunciar);
 
+/* Buscar por etiqueta */
+router.get('/etiqueta/:nombre', publicacion.buscarPorEtiqueta);
+
+/* Ver publicación */
+router.get('/ver/:id', publicacion.ver);
+
 /* Denunciar publicación */
 router.get('/:id/denunciar', publicacion.denunciar);
 router.post('/:id/denunciar', publicacion.denunciar);
@@ -35,5 +41,8 @@ router.post('/:id/marcarInteres', publicacion.marcarInteres);
 
 /* Guardar publicación */
 router.post('/:id/guardar', publicacion.guardar);
+
+/* Actualizar valoración */
+router.put('/:id/valoracion', publicacion.actualizarValoracion);
 
 module.exports = router;

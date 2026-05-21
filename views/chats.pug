@@ -1,49 +1,133 @@
 extends layout 
 
 block estilo 
+    link(rel="stylesheet", href="/stylesheets/chat.css")
 
 block content 
-    mixin mostrarMensajes(id, mensajes)
-        const 
-
     div#contenedor 
-        form#form-busqueda(action="/buscarSeguido", method="post") 
-            input#input-buscador(type="text", name="nombre", placeholder="Ingresá el nombre...") 
+        div#contenedor-seguidos
+            div#form-busqueda
+                input#input-buscador(type="text", name="nombre", placeholder="Ingresá el nombre...") 
+                button(onclick=`buscarSeguido()`) 🔎
 
-        if (seguidos && seguidos.length > 0) 
-            div(id="contenedor-seguidos") 
-                each s in seguidos 
-                    div(onclick=`${+mostrarMensajes(s.id, mensajes)}`) 
-                        img(src=s.foto_perfil) 
-                        h3= s.nombre 
+            div#lista-seguidos
+                if (mensajes && mensajes.length > 0) 
+                    each m in mensajes 
+                        div(onclick=`mostrarMensajes(${m.Receptor.id})`, style="cursor: pointer") 
+                            img(src=m.Receptor.foto_perfil) 
+                            h3= m.Receptor.nombre 
 
-        div(id="contenedor-mensajes", style="display: none;") 
-            div(id="nuevoMensaje-form") 
-                form(action=`/usuario/mensaje/crear/seguido/${}`, method="post") 
-                    input(type="text", name="texto", placeholder="Escribí un mensaje...") 
-                    button(type="submit") ⬆️
+        div#contenedor-mensajes 
+            div#lista-mensajes
+            div#nuevoMensaje-form
+                input#input-mensaje(type="text", name="texto", placeholder="Escribí un mensaje...", disabled) 
+                button#boton-enviar(onclick='actualizarMensajes()', disabled) ⬆️
 
     script.
-        function mostrarMensajes(id, mensajes) {
+        const mensajes = !{JSON.stringify(mensajes)};
+        let idSeguido;
+
+        // Mostrar los mensajes de un contacto
+        function mostrarMensajes(id_seguido) {
             const contenedor_mensajes = document.getElementById('contenedor-mensajes');
-            const mensajesSeguido = mensajes.find(m => m.id_seguido === id);
+            const lista_mensajes = document.getElementById('lista-mensajes');
+            const input_mensaje = document.getElementById('input-mensaje');
+            const boton_enviar = document.getElementById('boton-enviar');
+            const mensajesFiltrados = mensajes.filter(m => m.Receptor.id === id_seguido);
+            idSeguido = id_seguido;
             let html = '';
             
-            mensajesSeguido.forEach(m => {
-                html = `
-                    <div id="mensajes">
+            mensajesFiltrados.forEach(m => {
+                html += `
+                    <div class="mensaje" id="msg-container-${m.id}">
                         <div>
-                            <p>${m.createdAt}</p>
-                            <p>${m.texto}</p>
+                            <p>${new Date(m.createdAt).toLocaleString()}: <strong id="texto-mensaje-${m.id}">${m.texto}</strong></p>
                         </div>
-                        <div id="acciones">
-                            <form accion="/mensaje/${m.id}/eliminar" method="post"><button type="submit">🗑️</button></form>
-                            <form accion="/mensaje/${m.id}/modificar" method="post"><button type="submit">✏️</button></form>
+                        <div class="acciones">
+                            <button onclick="alternarFormModificar(${m.id})">✏️</button>
+                            <button onclick="eliminar(${m.id}, this)">🗑️</button>
+                            
+                            <div id="modificar-form-${m.id}" style="display: none;">
+                                <input type="text" id="input-edit-${m.id}" value="${m.texto}">
+                                <button onclick="modificar(${m.id})">✅</button>
+                            </div>
                         </div>
                     </div>
                 `;
             });
 
-            contenedor_mensajes.appendChild(html);
-            contenedor_mensajes.style.display === 'none' ? 'block' : 'none';
+            lista_mensajes.innerHTML = html;
+            contenedor_mensajes.style.display = 'block';
+            input_mensaje.disabled = false;
+            boton_enviar.disabled = false;
+        }
+
+        // Buscar un contacto
+        async function buscarSeguido() {
+            const lista_seguidos = document.getElementById('lista-seguidos');
+            const nombre = document.getElementById('input-buscador').value;
+            const seguidos = Array.from(new Set(mensajes.filter(m => JSON.stringify(m.Receptor))));
+
+            lista_seguidos.innerHTML = '';
+            seguidos.forEach(s => {
+                const html = `
+                    <div onclick="mostrarMensajes(${s.id})" style="cursor: pointer;">
+                        <img src="${s.foto_perfil}">
+                        <h3>${s.nombre}</h3>
+                    </div>
+                `;
+                lista_seguidos.insertAdjacentHTML('beforeend', html);
+            });
+        }
+
+        // Eliminar un mensaje
+        async function eliminar(id_mensaje, elemento) {
+            try {
+                const res = await fetch(`/mensaje/${id_mensaje}/eliminar`, { method: 'DELETE' });
+                if (res.ok) elemento.closest('.mensaje').remove();
+            } catch (error) { console.error(error); }
+        }
+
+        // Alternar formulario de modificación
+        function alternarFormModificar(id_mensaje) {
+            const divModificar = document.getElementById(`modificar-form-${id_mensaje}`);
+            divModificar.style.display = divModificar.style.display === 'none' ? 'block' : 'none';
+        }
+
+        // Modificar un mensaje
+        async function modificar(id_mensaje) {
+            try {
+                const nuevoTexto = document.getElementById(`input-edit-${id_mensaje}`).value;
+                const res = await fetch(`/mensaje/${id_mensaje}/modificar`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ texto: nuevoTexto })
+                });
+                
+                if (res.ok) {
+                    document.getElementById(`texto-mensaje-${id_mensaje}`).innerText = nuevoTexto;
+                    alternarFormModificar(id_mensaje);
+                }
+            } catch (error) { console.error(error); }
+        }
+
+        // Actualizar mensajes
+        async function actualizarMensajes() {
+            const input_mensaje = document.getElementById('input-mensaje');
+            const texto = input.value;
+            if(!texto.trim()) return;
+
+            try {
+                const res = await fetch(`/mensaje/crear/seguido/${idSeguido}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ texto })
+                });
+                if(res.ok) {
+                    const m = await res.json();
+                    mensajes.push(m);
+                    mostrarMensajes(idSeguido);
+                    input_mensaje.value = '';
+                }
+            } catch (error) { console.error(error); }
         }

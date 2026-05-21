@@ -1,6 +1,5 @@
 const { DataTypes, Model } = require('sequelize');
 const sequelize = require('../config/db');
-const Publicacion = require('./Publicacion');
 
 class Imagen extends Model {}
 
@@ -20,7 +19,7 @@ Imagen.init(
             type: DataTypes.BOOLEAN,
             defaultValue: false
         },
-        copyright: {
+        marcaDeAgua: {
             type: DataTypes.STRING
         }
     }, {

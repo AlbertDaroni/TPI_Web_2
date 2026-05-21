@@ -23,6 +23,9 @@ router.get('/chats', usuario.chats);
 /* Notificaciones */
 router.get('/notificaciones', usuario.notificaciones);
 
+/* Filtrar notificaciones */
+router.post('/notificaciones/mostrar', usuario.filtrarNotificaciones);
+
 /* Eliminar notificaciones */
 router.get('/notificaciones/eliminar', usuario.eliminarNotificaciones);
 
@@ -30,7 +33,7 @@ router.get('/notificaciones/eliminar', usuario.eliminarNotificaciones);
 router.post('/perfil/seguir/:id', usuario.alternarSeguimiento);
 
 /* Actualizar visto */
-router.post('/notificaciones/:id/actualizarVisto', usuario.actualizarVisto);
+router.put('/notificaciones/:id/actualizarVisto', usuario.actualizarVisto);
 
 /* Perfil */
 router.get('/:id/perfil', usuario.perfil);

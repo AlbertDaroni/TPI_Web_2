@@ -6,11 +6,13 @@ const logger = require('morgan');
 const sesion = require('express-session');
 
 const indexRouter = require('./routes/index');
+const mensajesRouter = require('./routes/mensaje');
 const usuariosRouter = require('./routes/usuario');
 const publicacionesRouter = require('./routes/publicacion');
 
 const sequelize = require('./config/db');
-const { Likes, Imagen, Mensaje, Usuario, Denuncia, Etiqueta, Favorito, Validador, Comentario, Publicacion, Notificacion } = require('./models/index');
+const { Imagen, Mensaje, Usuario, Denuncia, Etiqueta, Favorito, Validador, Comentario, Valoracion, Publicacion, Notificacion } = require('./models/index');
+const popular = require('./popular');
 
 const app = express();
 
@@ -39,6 +41,7 @@ app.use((req, res, next) => {
     next();
 });
 
+app.use('/mensaje', mensajesRouter);
 app.use('/usuario', usuariosRouter);
 app.use('/publicacion', publicacionesRouter);
 app.use('/', indexRouter);
@@ -46,16 +49,20 @@ app.use('/', indexRouter);
 // Atrapar un Error 404 y seguir al Manejador de Error
 app.use((req, res, next) => { next(createError(404)); });
 
-// Manejador de error
+// Manejador de Error
 app.use((err, req, res, next) => {
   res.locals.error = req.app.get('env') === 'development' ? err : {};
   console.error(err);
-  res.status(err.status || 500).render('error');
+  res.status(err.status || 500).render('error', { message: err.message });
 });
 
-sequelize.sync({ alter: true })
-  .then(() => {
+sequelize.sync({ alter: true, force: false })
+  .then(async () => {
     console.log('Modelos sincronizados con la base de datos')
+
+    try {
+      // await popular.popular();
+    } catch (error) { console.log(error); }
 
     const puerto = 3000;
     app.listen(puerto, () => console.log(`Servidor corriendo en http://localhost:${puerto}`));

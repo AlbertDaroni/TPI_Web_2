@@ -1,22 +1,23 @@
 const { DataTypes, Model } = require('sequelize');
 const sequelize = require('../config/db');
 
-class Validador extends Model {}
+class Valoracion extends Model {}
 
-Validador.init(
+Valoracion.init(
     {
         id: {
             type: DataTypes.INTEGER,
             autoIncrement: true,
             primaryKey: true
+        },
+        valoracion: {
+            type: DataTypes.BOOLEAN
         }
     }, {
         sequelize,
-        timestamps: true,
-        paranoid: true,
-        modelName: 'Validador',
-        tableName: 'validador'
+        modelName: 'Valoracion',
+        tableName: 'valoraciones'
     }
 );
 
-module.exports = Validador;
+module.exports = Valoracion;

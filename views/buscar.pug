@@ -1,0 +1,52 @@
+extends layout 
+
+block estilo
+    link(rel="stylesheet", href="/stylesheets/buscar.css")
+
+block content 
+    mixin renderizarResultados(lista)
+        if (lista && lista.length > 0)
+            each item in lista 
+                if (item.nombre) 
+                    div.resultado(onclick=`location.href='/usuario/${item.id}/perfil'`)
+                        img#foto-perfil(src=item.foto_perfil)
+                        span= item.nombre
+                else if (item.titulo) 
+                    div.resultado(onclick=`location.href='/publicacion/ver/${item.id}'`)
+                        img.publicacion-mini(src=item.Imagens[0].imagen)
+                        span= item.titulo
+        else 
+            p No se encontraron resultados para "#{nombre}"
+
+    div#contenido
+        div
+            h2 Resultados para "#{nombre}"
+            nav#secciones-botones
+                div.tab-buttons
+                    button#boton-usuarios(onclick="mostrarSeccion('usuarios')") 
+                        h3
+                            strong Usuarios
+                    button#boton-publicaciones(onclick="mostrarSeccion('publicaciones')") 
+                        h3
+                            strong Publicaciones
+
+            main#secciones 
+                div#seccion-usuarios.seccion-perfil
+                    +renderizarResultados(usuarios)
+                div#seccion-publicaciones.seccion-perfil(style="display: none;")
+                    +renderizarResultados(publicaciones)
+
+    script.
+        // MOSTRAR SECCIÓN SELECCIONADA
+        function mostrarSeccion(idSeccion) {
+            const boton_usuarios = document.getElementById('boton-usuarios');
+            const boton_publicaciones = document.getElementById('boton-publicaciones');
+            const seccion_usuarios = document.getElementById('seccion-usuarios');
+            const seccion_publicaciones = document.getElementById('seccion-publicaciones');
+
+            seccion_usuarios.style.display = idSeccion === 'usuarios' ? 'grid' : 'none';
+            seccion_publicaciones.style.display = idSeccion === 'publicaciones' ? 'grid' : 'none';
+
+            document.querySelectorAll('#secciones-botones button').forEach(btn => btn.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+        }

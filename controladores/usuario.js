@@ -1,21 +1,12 @@
-const Likes = require('../models/Likes');
-const Imagen = require('../models/Imagen');
-const Mensaje = require('../models/Mensaje');
-const Usuario = require('../models/Usuario');
-const Favorito = require('../models/Favorito');
-const Etiqueta = require('../models/Etiqueta');
-const Denuncia = require('../models/Denuncia');
-const Comentario = require('../models/Comentario');
-const Publicacion = require('../models/Publicacion');
-const Notificacion = require('../models/Notificacion');
+const { Imagen, Mensaje, Usuario, Denuncia, Etiqueta, Favorito, Comentario, Publicacion, Notificacion } = require('../models/index'); 
 const { Op } = require('sequelize');
 
 async function registrar(req, res, next) {
     try {
-        const { nombre, email, contraseña } = req.body;
-        if (!nombre || !email || !contraseña) { res.render('registro', { error: 'Todos los campos son obligatorios' }); }
+        const { nombre, email, contrasena } = req.body;
+        if (!nombre || !email || !contrasena) { res.render('registro', { error: 'Todos los campos son obligatorios' }); }
 
-        const nuevoUsuario = await Usuario.create({ nombre, email, contraseña, registrado: true });
+        const nuevoUsuario = await Usuario.create({ nombre, email, contrasena, registrado: true });
         req.session.userId = nuevoUsuario.id;
 
         res.redirect('/');
@@ -27,10 +18,10 @@ async function registrar(req, res, next) {
 
 async function ingresar(req, res, next) {
     try {
-        const { nombre, email, contraseña } = req.body;
-        if (!nombre || !email || !contraseña) { res.render('registro', { error: 'Todos los campos son obligatorios' }); }
+        const { nombre, email, contrasena } = req.body;
+        if (!nombre || !email || !contrasena) { res.render('registro', { error: 'Todos los campos son obligatorios' }); }
 
-        const usuario = await Usuario.findOne({ where: { nombre, email, contraseña, registrado: true } });
+        const usuario = await Usuario.findOne({ where: { nombre, email, contrasena, registrado: true } });
         
         if (usuario) {
             req.session.userId = usuario.id;
@@ -51,7 +42,7 @@ async function modificar(req, res, next) {
 
             if (!nombre || !email || !contrasena) { res.render('modificar', { usuario: usuarioActual, error: 'Hay campos incompletos' }); }
 
-            await Usuario.update({ nombre: nombre, email: email, contraseña: contrasena, descripcion: descripcion, foto_perfil: foto_perfil }, { where: { id: id } });
+            await Usuario.update({ nombre: nombre, email: email, contrasena: contrasena, descripcion: descripcion, foto_perfil: foto_perfil }, { where: { id: id } });
             res.redirect(`/usuario/${id}/perfil`);
         }
     } catch (error) {
@@ -69,6 +60,7 @@ async function perfil(req, res, next) {
         if (isNaN(Number(id_perfil))) { return res.status(400).json({ error: 'Dato inválido' }); }
 
         const perfil = await Usuario.findByPk(id_perfil, { include: [{ association: 'Seguidores' }, { association: 'Seguidos' }] });
+        if (!perfil) return res.status(404).render('error', { error: new Error('Usuario no encontrado') });
 
         const misPublicaciones = await Publicacion.findAll({ where: { id_usuario: id_perfil } });
         const idsPublicaciones = misPublicaciones.map(p => p.id);
@@ -84,19 +76,20 @@ async function perfil(req, res, next) {
             const idsSeguidos = misSeguidos.map(s => s.id);
 
             if (idsSeguidos.length > 0) {
-                const pubs_Seguidos = await Publicacion.findAll({ where: { id_usuario: idsSeguidos } });
+                const pubs_Seguidos = await Publicacion.findAll({ where: { id_usuario: { [Op.in]: idsSeguidos } } });
                 const idsPublicaciones = pubs_Seguidos.map(p => p.id);
                 publicaciones_Seguidos = await obtenerDatosCompletosPublicacion(idsPublicaciones);
             }
-
-            const misFavoritos = await Favorito.findAll({ where: { id_usuario: id_registrado } });
-            const idsFavoritos = misFavoritos.map(f => f.id_publicacion);
-            favoritos = await obtenerDatosCompletosPublicacion(idsFavoritos);
-
-            const listas = await Favorito.findAll({ where: { id_usuario: id_registrado }, attributes: ['nombre'], group: ['nombre'] });
-            nombreListas = listas.map(l => l.nombre);
+            if (id_registrado) {
+                const misFavoritos = await Favorito.findAll({ where: { id_usuario: id_registrado } });
+                const idsFavoritos = misFavoritos.map(f => f.id_publicacion);
+                favoritos = await obtenerDatosCompletosPublicacion(idsFavoritos);
+    
+                const listas = await Favorito.findAll({ where: { id_usuario: id_registrado }, attributes: ['nombre'], group: ['nombre'] });
+                nombreListas = listas.map(l => l.nombre);
+            }
         } else {
-            loSigo = await perfil.hasSeguidores(id_registrado);
+            if (id_registrado) loSigo = await perfil.hasSeguidores(id_registrado);
         }
 
         res.render('perfil', {
@@ -116,15 +109,15 @@ async function perfil(req, res, next) {
 
 async function seguidos(req, res, next) {
     try {
-        const seguidos = await Usuario.findByPk(req.params.id, { include: [{ association: 'Seguidos' }] });
-        res.render('seguidos-seguidores', { tipo: "seguidos", lista: seguidos, id_perfil: req.params.id });
+        const seguidos = await Usuario.findByPk(req.params.id, { include: [{ model: Usuario, as: 'Seguidos' }] });
+        res.render('seguidos-seguidores', { tipo: "seguidos", lista: seguidos.Seguidos });
     } catch (error) { next(error); }
 }
 
 async function seguidores(req, res, next) {
     try {
-        const seguidores = await Usuario.findByPk(req.params.id, { include: [{ association: 'Seguidores' }] });
-        res.render('seguidos-seguidores', { tipo: "seguidores", lista: seguidores, usuario: req.params.id });
+        const seguidores = await Usuario.findByPk(req.params.id, { include: [{ model: Usuario, as: 'Seguidores' }] });
+        res.render('seguidos-seguidores', { tipo: "seguidores", lista: seguidores.Seguidores });
     } catch (error) { next(error); }
 }
 
@@ -143,10 +136,10 @@ async function alternarSeguimiento(req, res, next) {
 
         if (loSigo) {
             await seguidor.removeSeguidos(id_seguido);
-            await Notificacion.create({ tipo_evento: 'Dejó de seguirte', id_causante: id_seguidor, id_dueño: id_seguido });
+            await Notificacion.create({ tipo_evento: 'Dejó de seguirte', id_causante: id_seguidor, id_dueno: id_seguido });
         } else {
             await seguidor.addSeguidos(id_seguido);
-            await Notificacion.create({ tipo_evento: 'Nuevo seguidor', id_causante: id_seguidor, id_dueño: id_seguido });
+            await Notificacion.create({ tipo_evento: 'Nuevo seguidor', id_causante: id_seguidor, id_dueno: id_seguido });
         }
 
         res.redirect(`/usuario/${id_seguido}/perfil`);
@@ -156,9 +149,30 @@ async function alternarSeguimiento(req, res, next) {
 async function notificaciones(req, res, next) {
     try {
         const notificaciones = await Notificacion.findAll({
-            where: { id_dueño: req.session.userId },
-            include: [{ model: Usuario, as: 'Causante' }],
+            where: { id_dueno: req.session.userId },
+            include: [{ model: Usuario, attributes: ['id', 'nombre', 'foto_perfil'], as: 'Causante' }],
             order: [['createdAt', 'DESC']]
+        });
+        res.render('notificaciones', { notificaciones });
+    } catch (error) { next(); }
+}
+
+async function filtrarNotificaciones(req, res, next) {
+    try {
+        const opcion = req.body.opcion;
+        const id = req.session.userId;
+
+        let whereClause = {};
+        if (opcion === "todas") whereClause = { id_dueno: id };
+        else if (opcion === 'leidas') whereClause = { id_dueno: id, vista: true };
+        else if (opcion === 'no-leidas') whereClause = { id_dueno: id, vista: false };
+        else if (['Denuncia', 'Interés', 'Valorizó', 'Comentó'].includes(opcion)) whereClause = { id_dueno: id, tipo_evento: opcion };
+        else return res.status(404).render('error', { error: new Error('Dato inválido') });
+
+        const notificaciones = await Notificacion.findAll({ 
+            where: whereClause, 
+            include: [{ model: Usuario, attributes: ['id', 'nombre', 'foto_perfil'], as: 'Causante' }],
+            order: [['createdAt', 'DESC']] 
         });
         res.render('notificaciones', { notificaciones });
     } catch (error) { next(); }
@@ -171,24 +185,24 @@ async function actualizarVisto(req, res, next) {
         if (isNaN(Number(id_notificacion))) { return res.status(400).json({ error: 'Dato inválido' }); }
 
         const vista = await Notificacion.update({ vista: true }, { where: { id: id_notificacion } });
-        res.json({ vista });
+        res.json({ vista: vista[0] === 1 ? true : false });
     } catch (error) { next(error); }
 }
 
 async function eliminarNotificaciones(req, res, next) {
     try {
-        await Notificacion.destroy({ where: { id_dueño: req.session.userId } });
+        await Notificacion.destroy({ where: { id_dueno: req.session.userId } });
         res.redirect('/usuario/notificaciones');
     } catch(error) { next(error); }
 }
 
 async function chats(req, res, next) {
     try {
-        const mensajes = await Mensaje.findAll({ where: { id_usuario: req.session.userId }, include: [{ model: Usuario, as: 'Receptor' }], order: [['createdAt', 'DESC']] });
-        const usuario = await Usuario.findAll({ where: { id: req.session.userId } });
-        const idsSeguidos = mensajes.map(m => m.id_seguido);
-        const seguidos = await Usuario.findAll({ where: { id: { [Op.in]: idsSeguidos } } });
-        res.render('chats', { mensajes, usuario, seguidos });
+        const mensajes = await Mensaje.findAll({ 
+            where: { id_usuario: req.session.userId }, 
+            include: [{ model: Usuario, as: 'Receptor' }], order: [['createdAt', 'DESC']] 
+        });
+        res.render('chats', { mensajes });
     } catch (error) { next(error); }
 }
 
@@ -200,7 +214,6 @@ async function obtenerDatosCompletosPublicacion(ids) {
             { model: Usuario, as: 'Usuario' },
             { model: Imagen },
             { model: Etiqueta },
-            { model: Likes },
             { model: Denuncia },
             { model: Comentario, include: [{model: Usuario}] }
         ],
@@ -217,6 +230,7 @@ module.exports = {
     seguidos,
     alternarSeguimiento,
     notificaciones,
+    filtrarNotificaciones,
     actualizarVisto,
     eliminarNotificaciones,
     chats

@@ -6,28 +6,44 @@ block estilo
 block content 
     div.lista-container
         h3 Notificaciones 
-        if (notificaciones && notificaciones.length > 0)
-            div.acciones
-                div.botones-acciones
-                    button#boton-marcar-todas(onclick=`actualizarTodasVisto(${notificaciones})`) Marcar todas
-                    a(href='/usuario/notificaciones/eliminar') Eliminar todas
+        div.acciones
+            div.botones-acciones
+                form(action=`/usuario/notificaciones/mostrar`, method="post") 
+                    select(name="opcion")
+                        option(value="todas") Todas
+                        option(value="no-leidas") No leídas 
+                        option(value="leidas") Leídas 
+                        option(value="Comentó") Comentarios
+                        option(value="Interés") Intereses 
+                        option(value="Valorizó") Valoraciones 
+                        option(value="Denuncia") Denuncias 
+                    button(type="submit") Filtrar   
+                button#boton-marcar-todas(onclick=`actualizarTodasVisto()`) Marcar todas
+                a(href='/usuario/notificaciones/eliminar') Eliminar todas
 
+        if (notificaciones && notificaciones.length > 0)
             each n in notificaciones 
-                div.notificacion-item(onclick=`location.href='/usuario/${n.id_causante}/perfil'`, class=(n.vista === 0 ? "no-leida" : ""))
+                div.notificacion-item(onclick=`location.href='/usuario/${n.id_causante}/perfil'`, class=(n.vista ? "no-leida" : ""))
                     img(src=n.Causante.foto_perfil)
                     
                     div.info-notificacion
                         p
-                            strong= n.nombre
+                            strong= n.Causante.nombre
                             if (n.tipo_evento === "Interés")
                                 |  se interesó en tu publicación 
                                 strong "#{n.titulo}"
                                 br
-                                span Motivo: #{n.motivo}
+                                | Motivo: #{n.motivo}
                             else if (n.tipo_evento === "Nuevo seguidor")
                                 |  comenzó a seguirte.
                             else if (n.tipo_evento === "Dejó de seguirte")
                                 |  dejó de seguirte.
+                            else if (n.tipo_evento === "Valorizó")
+                                |  valorizó tu publicación
+                                a(href=`/publicacion/ver/${n.id_publicacion}`) Ver
+                            else if (n.tipo_evento === "Comentó")
+                                |  comentó tu publicación
+                                a(href=`/publicacion/ver/${n.id_publicacion}`) Ver
                             else if (n.tipo_evento === "Denuncia")
                                 |  hizo una denuncia.
                                 br
@@ -40,36 +56,36 @@ block content
                             else
                                 |  interactuó con vos.
                         
-                        small= n.fecha.toLocaleDateString() + " " + n.fecha.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+                        small= new Date(n.createdAt).toLocaleDateString()
 
-                    if (n.vista === 0)
-                        button(onclick=`event.stopPropagation(); actualizarVisto(${n.id})`, id=`boton-visto-${n.id}`, class="btn-visto") ✖️
-                    else 
+                    if (n.vista)
                         button(onclick=`event.stopPropagation();`, type="button", id=`boton-visto-${n.id}`, class="btn-visto") ✔️
+                    else 
+                        button(onclick=`event.stopPropagation(); actualizarVisto(${n.id})`, id=`boton-visto-${n.id}`, class="btn-visto") ✖️
         else 
             p No hay notificaciones
 
     script.
+        const notificaciones = !{JSON.stringify(notificaciones || null)};
+
         // ACTUALIZAR VISTO
         async function actualizarVisto(id) {
             try {
                 const boton_visto = document.getElementById(`boton-visto-${id}`);
-                const res = await fetch(`/usuario/notificaciones/${id}/actualizarVisto`, { method: 'POST' });
+                const res = await fetch(`/usuario/notificaciones/${id}/actualizarVisto`, { method: 'PUT' });
                 const data = await res.json();
-
-                (data.vista === 1) ? boton_visto.innerText = "✖️" : boton_visto.innerText = "✔️";
+                (data.vista) ? boton_visto.innerText = "✔️" : boton_visto.innerText = "✖️";
             } catch (error) { console.error("Error:", error); }
         }
 
         // MARCAR TODAS COMO VISTO
-        async function actualizarTodasVisto(notificaciones) {
+        async function actualizarTodasVisto() {
             try {
-                const boton_visto = document.getElementById('boton-marcar-todas');
-
                 for (n of notificaciones) {
-                    const res = await fetch(`/usuario/notificaciones/${n.id}/actualizarVisto`, { method: 'POST' });
+                    const boton_visto = document.getElementById(`boton-visto-${n-id}`);
+                    const res = await fetch(`/usuario/notificaciones/${n.id}/actualizarVisto`, { method: 'PUT' });
                     const data = await res.json();
-                    (data.vista === 1) ? boton_visto.innerText = "✖️" : boton_visto.innerText = "✔️";
+                    (data.vista) ? boton_visto.innerText = "✔️" : boton_visto.innerText = "✖️";
                 }
             } catch (error) { console.error("Error:", error); }
         }

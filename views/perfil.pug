@@ -7,12 +7,8 @@ block content
     mixin renderLista(lista)
         if (lista && lista.length > 0)
             each pub in lista 
-                div.publicacion-mini(onclick=`location.href='/#pub-${pub.id}'`)
+                div.publicacion-mini(onclick=`location.href="/publicacion/ver/${pub.id}"`)
                     img(src=pub.Imagens[0].imagen)
-                    
-                    div.overlay
-                        span ❤️ #{pub.likes}
-                        span 💬 #{pub.cantidad}
         else 
             p.sin-contenido Aún no hay publicaciones
 
@@ -25,8 +21,8 @@ block content
                 div.fila-usuario
                     h5= usuario.nombre 
                     if (esMiPerfil)
-                        a.btn-edit(href=`/usuario/modificar`) Editar perfil
-                        a.btn-logout(href="/cerrar-sesion") Cerrar sesión
+                        a.btn-edit(href=`/usuario/modificar`) ✏️
+                        a.btn-logout(href="/cerrar-sesion") 🚪
                 
                 div#seguidos-seguidores
                     a(href=`/usuario/${usuario.id}/seguidores`)
@@ -39,7 +35,7 @@ block content
                 div#descripcion 
                     p= usuario.descripcion 
                 
-                if (!esMiPerfil)
+                if (!esMiPerfil && id)
                     form(action=`/usuario/perfil/seguir/${usuario.id}`, method="post") 
                         if (loSigo)
                             button.btn-unfollow(type="submit") Dejar de seguir
@@ -71,60 +67,9 @@ block content
                     +renderLista(publicaciones_Seguidos)
 
                 div#mis-favoritos.seccion-perfil(style="display: none;")
-                    +renderLista(publicaciones_Favoritas)
+                    +renderLista(favoritos)
 
     script.
-        // ACTUALIZAR LIKES
-        async function actualizarLikes(id) {
-            const res = await fetch(`/publicacion/like/${id}`, { method: 'POST' });
-            const data = await res.json();
-            document.getElementById(`likes-${id}`).innerText = data.likes;
-        }
-
-        // MOSTRAR / OCULTAR COMENTARIOS
-        function alternarComentarios(id, comentarios) {
-            const contenedor_comentarios = document.getElementById(`lista-comentarios-${id}`);
-
-            if (contenedor_comentarios.style.display === 'none') {
-                contenedor_comentarios.innerHTML = '';
-
-                comentarios.forEach(comentario => {
-                    contenedor_comentarios.innerHTML += `
-                        <img src="${comentario.id_usuario.foto_perfil}" alt="/images/sin_foto_perfil.png" width="40">
-                        <h5>${comentario.id_usuario.nombre}</h5>
-                        <p>${comentario.comentario}</p>
-                    `;
-                });
-                contenedor_comentarios.style.display = 'block';
-            } else {
-                contenedor_comentarios.style.display = 'none';
-            }
-        }
-
-        // AGREGAR COMENTARIO
-        async function agregarComentario(id) {
-            const texto = document.querySelector(`input-coment-${id}`).value;
-            if (!texto) return;
-
-            try {
-                const res = await fetch(`/publicacion/${id}/comentario/agregar`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ comentario: texto, id_usuario: id })
-                });
-
-                if (res.ok) location.reload();
-            } catch (error) { console.error('Error al agregar el comentario', error); }
-        }
-
-        // MODIFICAR COMENTARIO
-        async function modificarComentario(id_publicacion, id_comentario) {
-            try {
-                const contenedor_Comentarios = document.getElementById('comentarios');
-                contenedor_Comentarios.innerHTML = '';
-            } catch (error) { console.error('Error al modificar el comentario', error); }
-        }
-
         // MOSTRAR SECCIÓN SELECCIONADA
         function mostrarSeccion(idSeccion) {
             document.querySelectorAll('.seccion-perfil').forEach(div => { div.style.display = 'none'; });

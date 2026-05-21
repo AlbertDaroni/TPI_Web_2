@@ -10,7 +10,7 @@ block content
         if (lista && lista.length > 0)
             each item in lista 
                 div.usuario-item(onclick=`location.href='/usuario/${item.id}/perfil'`)
-                    img(src=item.foto_perfil || "/images/sin_foto_perfil.png")
+                    img(src=item.foto_perfil)
                     div.info-usuario
                         strong= item.nombre 
         else 

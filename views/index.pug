@@ -7,106 +7,77 @@ block content
   div#contenido
     if (datos && datos.length > 0)
       each dato in datos 
-        div.contenedor-post
-          div.publicacion(id=`pub-${dato.id}`)
-            div.perfil-header(onclick=`location.href="/usuario/${dato.Usuario.id}/perfil"`)
-              img(src=dato.Usuario.foto_perfil, width="40")
-              h5= dato.Usuario.nombre
-
-            div.cuerpo-publicacion
-              div.foto-seccion
-                div(id=`imagen-container-${dato.id}`)
-                  img.main-img(src=dato.Imagens[0].imagen, style="width: 100%")
-                  p= (dato.Imagens[0].licencia === 0) ? 'Imagen sin licencia' : 'Imagen con licencia'
-                
-                if (dato.Imagens.length > 1)
-                  button(onclick=`mover(${dato.id}, -1, ${JSON.stringify(dato.Imagens)})`) ◀️
-                  span(id=`pos-${dato.id}`) 1 / #{dato.Imagens.length}
-                  button(onclick=`mover(${dato.id}, 1, ${JSON.stringify(dato.Imagens)})`) ▶️
-
-            div#informacion
-              h5= dato.titulo
-              p= dato.createdAt.toLocaleDateString()
-              p= dato.descripcion
-
-            div#acciones
-              if (dato.id_usuario !== usuario.id)
-                button(onclick=`actualizarLikes(${dato.id})`, class="boton-like")
-                  span(id=`emoji-like-${dato.id}`)= dato.dioLike ? '❤️' : '🤍'
-                  span(id=`likes-pub-${dato.id}`)= dato.likes
-                button(onclick=`alternarComentarios(${dato.id}, ${JSON.stringify(dato.Comentarios)})`) 💬
-                  span(id=`comentarios-pub-${dato.id}`)= dato.cantidad
-                button(onclick=`guardarPublicacion(${dato.id})`) 📁
-                button(onclick=`marcarInteres(${dato.id})`) ⭐
-                a(href=`/publicacion/${dato.id}/denunciar`) 🚩
-              else
-                button(type="button") ❤️
-                  span(id=`likes-pub-${dato.id}`)= dato.likes
-                button(onclick=`alternarComentarios(${dato.id}, ${JSON.stringify(dato.Comentarios)})`) 💬
-                  span(id=`comentarios-pub-${dato.id}`)= dato.cantidad
-            
-            div(id=`guardarPublicacion-${dato.id}`, style="display: none;")
-              form(action=`/publicacion/${dato.id}/guardar`, method="post")
-                input(type="text", name="nombreLista", placeholder="Nombre de la lista", required) 
-                button(type="submit") 📩
-
-            div(id=`motivo-interes-${dato.id}`, style="display: none;")
-              form(action=`/publicacion/${dato.id}/marcarInteres`, method="post") 
-                textarea(name="motivoInteres", cols="30", rows="5", placeholder="Escribí el motivo de tu interés", required)
-                button(type="submit") 📩
-
-          div(id=`seccion-comentarios-${dato.id}`, style="display: none;")
-            div.form-comentario
-              form(id=`form-agregar-comentario-${dato.id}`, action=`/publicacion/${dato.id}/comentario/agregar`, method="post") 
-                textarea(name='comentario', cols="30", rows="5", placeholder="Escribí un comentario...")
-                button(type="submit") Comentar
-            div(id=`lista-comentarios-pub-${dato.id}`)  
-    else
-      h2 Aún no hay publicaciones
-      p ¡Creá la tuya!
+        include index_pub.pug 
+    else 
+      div.no-publicaciones
+        h2 Aún no hay publicaciones 
+        p ¡Creá la tuya!
+    div#marcador-final
 
   script.
-    const id_usuario = !{JSON.stringify(userIdSesion)};
+    const cachePublicaciones = {};
+    const id_usuario = !{JSON.stringify(usuario ? usuario.id : null)};
+    const ver = !{JSON.stringify(ver || null)};
+    
+    const datosIniciales = !{JSON.stringify(datos || [])};
+    datosInteresantes(datosIniciales);
 
-    // ACTUALIZAR LIKES
-    async function actualizarLikes(id) {
-      try {
-        const res = await fetch(`/publicacion/${id}/like`, { method: 'POST' });
-        const data = await res.json();
-        document.getElementById(`likes-pub-${id}`).innerText = data.likes;
-
-        const spanEmoji = document.getElementById(`emoji-like-${id}`);
-        (spanEmoji.innerText === '❤️') ? spanEmoji.innerText = '🤍' : spanEmoji.innerText = '❤️';
-      } catch(error) { console.error('No se actualizó el Like correctamente', error); }
+    function datosInteresantes(listaPosts) {
+      listaPosts.forEach(pub => {
+        cachePublicaciones[pub.id] = {
+          imagenes: pub.Imagens,
+          comentarios: pub.Comentarios
+        };
+      });
     }
 
-    // MOSTRAR / OCULTAR COMENTARIOS
-    function alternarComentarios(id, comentarios) {
+    // ACTUALIZAR LIKES
+    async function actualizarLikes(id, valoracion) {
+      try {
+        const res = await fetch(`/publicacion/${id}/valoracion`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ valoracion: valoracion })
+        });
+        const data = await res.json();
+        document.getElementById(`valoracion-pub-${id}`).innerText = data.promedio + '%';
+      } catch(error) { console.error('No se actualizó la valoración correctamente', error); }
+    }
+
+    // MOSTRAR / OCULTAR COMENTARIOS (Corregido leyendo del caché)
+    function alternarComentarios(id) {
       const seccion_comentarios = document.getElementById(`seccion-comentarios-${id}`);
       const contenedor_comentarios = document.getElementById(`lista-comentarios-pub-${id}`);
+      
+      // Obtenemos los comentarios desde el caché global
+      const comentarios = cachePublicaciones[id]?.comentarios || [];
 
       if (seccion_comentarios.style.display === 'none') {
         contenedor_comentarios.innerHTML = '';
 
         comentarios.forEach(comentario => {
-          const esMio = comentario.id_usuario === id_usuario;
+          const esMio = id_usuario && comentario.id_usuario === id_usuario;
+          const foto_perfil = comentario.Usuario.foto_perfil;
+          const nombre = comentario.Usuario.nombre;
           const id_comentario = comentario.id;
-          const foto_perfil = comentario.usuario.foto_perfil;
-          const nombre = comentario.usuario.nombre;
-          const texto = comentario.comentario;
+          const fecha_creacion = new Date(comentario.createdAt).toLocaleString();
+          const texto = comentario.texto;
+          const denuncias = comentario.denuncias || 0;
 
           let htmlComentario = '';
 
-          if (esMio) {
+          if (id_usuario && esMio) {
             htmlComentario = `
               <div class="comentario-item">
-                <img src=${foto_perfil} width="32">
+                <img src="${foto_perfil}" width="32">
                   <div class="comentario-cuerpo">
-                    <h5 class="comentario-cuerpo">${nombre}</h5>
-                    <p class="comentario-cuerpo">${texto}</p>
+                    <p><strong>${fecha_creacion}</strong></p>
+                    <h5>${nombre}</h5>
+                    <p>${texto}</p>
                     <div class="comentario-acciones">
                       <a href="/publicacion/${id}/comentario/${id_comentario}/eliminar">🗑️</a>
                       <button onclick="alternarModificacionComentario(${id_comentario})">✏️</button>
+                      <button type="button">🚩 ${denuncias}</button>
                       <div id="seccion-modificar-comentario-${id_comentario}" style="display: none;">
                         <form action="/publicacion/${id}/comentario/${id_comentario}/modificar" method="post">
                           <textarea name="nuevoComentario" rows="2">${texto}</textarea>
@@ -120,19 +91,19 @@ block content
           } else {
             htmlComentario = `
               <div class="comentario-item">
-                <img src=${foto_perfil} width="32">
+                <img src="${foto_perfil}" width="32">
                   <div class="comentario-cuerpo">
-                    <h5 class="comentario-cuerpo">${nombre}</h5>
-                    <p class="comentario-cuerpo">${texto}</p>
+                    <p><strong>${fecha_creacion}</strong></p>
+                    <h5>${nombre}</h5>
+                    <p>${texto}</p>
                     <div class="comentario-acciones">
-                      <a class="comentario-cuerpo" href="/publicacion/comentario/${id_comentario}/denunciar">🚩</a>
+                      <a href="/publicacion/comentario/${id_comentario}/denunciar">🚩</a>
                     </div>
                   </div>
               </div>
             `;
           }
-
-          contenedor_comentarios.innerHTML += htmlComentario;
+          contenedor_comentarios.insertAdjacentHTML('beforeend', htmlComentario);
         });
 
         seccion_comentarios.style.display = 'block';
@@ -146,40 +117,100 @@ block content
       seccion.style.display === 'none' ? seccion.style.display = 'block' : seccion.style.display = 'none';
     }
 
-    // MOSTRAR / OCULTAR MARCAR INTERÉS
     function marcarInteres(idPub) {
       const motivo_Interes = document.getElementById(`motivo-interes-${idPub}`);
       motivo_Interes.style.display === 'none' ? motivo_Interes.style.display = 'block' : motivo_Interes.style.display = 'none';
     }
 
-    // MOSTRAR / OCULTAR GUARDADO DE PUBLICACIÓN
     function guardarPublicacion(idPub) {
       const seccion = document.getElementById(`guardarPublicacion-${idPub}`);
       seccion.style.display === 'none' ? seccion.style.display = 'block' : seccion.style.display = 'none';
     }
 
-    // MOSTRAR SIGUIENTE/ANTERIOR IMAGEN
+    // MOSTRAR SIGUIENTE/ANTERIOR IMAGEN (Corregido leyendo del caché)
     const carruselStatus = {};
 
-    function mover(idPub, direccion, imagenes) {
+    function mover(idPub, direccion) {
       const contenedor_imagen = document.getElementById(`imagen-container-${idPub}`);
       const labelPosicion = document.getElementById(`pos-${idPub}`);
+      
+      // Leemos el set de imágenes del caché
+      const imagenes = cachePublicaciones[idPub]?.imagenes || [];
       const total = imagenes.length;
 
-      if (carruselStatus[idPub] === undefined) carruselStatus[idPub] = 0;
+      if (total <= 1) return;
 
+      if (carruselStatus[idPub] === undefined) carruselStatus[idPub] = 0;
       carruselStatus[idPub] += direccion;
 
       if (carruselStatus[idPub] >= total) carruselStatus[idPub] = 0;
       if (carruselStatus[idPub] < 0) carruselStatus[idPub] = total - 1;
 
       const nuevaImagen = imagenes[carruselStatus[idPub]];
-      contenedor_imagen.innerHTML = `
-        <img src="${nuevaImagen.imagen}" class="main-img" style="width: auto; max-width: 100%; height: auto; max-height: 500px; display: block; margin: 0 auto;">
-        <p>${(nuevaImagen.licencia === 0) ? 'Imagen sin licencia' : 'Imagen con licencia'}</p>
-      `;
+      
+      if (id_usuario) {
+        contenedor_imagen.innerHTML = `
+          <img src="${nuevaImagen.imagen}" class="main-img" style="width: auto; max-width: 100%; height: auto; max-height: 500px; display: block; margin: 0 auto;">
+          <p>${(nuevaImagen.licencia) ? 'Imagen sin licencia' : 'Imagen con licencia'}</p>
+        `;
+      } else if (nuevaImagen.licencia) {
+        contenedor_imagen.innerHTML = `
+          <img src="/images/imagen_censurada.png" class="main-img" style="width: auto; max-width: 100%; height: auto; max-height: 500px; display: block; margin: 0 auto;">
+          <p>Imagen con licencia</p>
+        `;
+      } else {
+        contenedor_imagen.innerHTML = `
+          <img src="${nuevaImagen.imagen}" class="main-img" style="width: auto; max-width: 100%; height: auto; max-height: 500px; display: block; margin: 0 auto;">
+          <p>Imagen sin licencia</p>
+        `;
+      }
 
       labelPosicion.innerText = `${carruselStatus[idPub] + 1} / ${total}`;
     }
 
-    // Cargar más publicaciones al llegar a la última (scroll infinito)
+    // SCROLL INFINITO (Corregido el contenedor padre e inyección en el caché)
+    const marcador = document.querySelector('#marcador-final');
+    let idsCargados = [];
+    let cargando = false;
+    
+    // Mapeamos los IDs iniciales impresos en el DOM
+    document.querySelectorAll('.contenedor-post').forEach(pub => idsCargados.push(Number(pub.dataset.id)));
+
+    const cargarPublicaciones = async () => {
+      if (cargando || ver) return;
+      cargando = true;
+
+      try {
+        // Apuntamos al contenedor principal del contenido
+        const contenedorContenido = document.querySelector('#contenido');
+        
+        const res = await fetch('/', { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ idsCargados }) 
+        });
+        const data = await res.json();
+
+        if (data.finalizar) {
+            observador.unobserve(marcador);
+            return;
+        }
+
+        // Almacenamos en el caché global los comentarios e imágenes de los nuevos posts recibidos
+        datosInteresantes(data.datosNuevos);
+
+        // Inyectamos las publicaciones renderizadas justo antes del marcador final
+        marcador.insertAdjacentHTML('beforebegin', data.html);
+
+        // Actualizamos nuestra lista de exclusión de IDs
+        idsCargados = [];
+        document.querySelectorAll('.contenedor-post').forEach(pub => idsCargados.push(Number(pub.dataset.id)));
+
+      } catch(error) { 
+          console.error('Error al cargar más publicaciones:', error);
+      } finally { cargando = false; }
+    };
+
+    const observador = new IntersectionObserver((entries) => { if (entries[0].isIntersecting) cargarPublicaciones(); }, { rootMargin: '300px' });
+
+    if (marcador) observador.observe(marcador);
