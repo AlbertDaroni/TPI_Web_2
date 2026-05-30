@@ -1,17 +1,19 @@
-const createError = require('http-errors');
-const express = require('express');
 const path = require('path');
-const cookieParser = require('cookie-parser');
 const logger = require('morgan');
+const express = require('express');
 const sesion = require('express-session');
+const createError = require('http-errors');
+const cookieParser = require('cookie-parser');
 
 const indexRouter = require('./routes/index');
 const mensajesRouter = require('./routes/mensaje');
 const usuariosRouter = require('./routes/usuario');
+const comentariosRouter = require('./routes/comentario');
 const publicacionesRouter = require('./routes/publicacion');
+const notificacionesRouter = require('./routes/notificacion');
 
 const sequelize = require('./config/db');
-const { Imagen, Mensaje, Usuario, Denuncia, Etiqueta, Favorito, Validador, Comentario, Valoracion, Publicacion, Notificacion } = require('./models/index');
+const { Imagen, Mensaje, Usuario, Etiqueta, Favorito, Validador, Comentario, Valoracion, Publicacion, Notificacion } = require('./models');
 const popular = require('./popular');
 
 const app = express();
@@ -43,7 +45,9 @@ app.use((req, res, next) => {
 
 app.use('/mensaje', mensajesRouter);
 app.use('/usuario', usuariosRouter);
+app.use('/comentario', comentariosRouter);
 app.use('/publicacion', publicacionesRouter);
+app.use('/notificacion', notificacionesRouter)
 app.use('/', indexRouter);
 
 // Atrapar un Error 404 y seguir al Manejador de Error
@@ -59,10 +63,7 @@ app.use((err, req, res, next) => {
 sequelize.sync({ alter: true, force: false })
   .then(async () => {
     console.log('Modelos sincronizados con la base de datos')
-
-    try {
-      // await popular.popular();
-    } catch (error) { console.log(error); }
+    // try { await popular.popular(); } catch (error) { console.log(error); }
 
     const puerto = 3000;
     app.listen(puerto, () => console.log(`Servidor corriendo en http://localhost:${puerto}`));

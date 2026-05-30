@@ -3,7 +3,7 @@ const router = express.Router();
 const { protegerRuta, upload } = require('../config/middlewares');
 const usuario = require('../controladores/usuario');
 
-/* Página de Registro */
+/* Registrarse */
 router.get('/registrarse', (req, res) => { res.render('registro'); });
 router.post('/registrarse', usuario.registrar);
 
@@ -17,23 +17,8 @@ router.use(protegerRuta);
 router.get('/modificar', usuario.modificar);
 router.post('/modificar', upload.single('imagen'), usuario.modificar);
 
-/* Chats */
-router.get('/chats', usuario.chats);
-
-/* Notificaciones */
-router.get('/notificaciones', usuario.notificaciones);
-
-/* Filtrar notificaciones */
-router.post('/notificaciones/mostrar', usuario.filtrarNotificaciones);
-
-/* Eliminar notificaciones */
-router.get('/notificaciones/eliminar', usuario.eliminarNotificaciones);
-
 /* Seguir / Dejar de seguir */
 router.post('/perfil/seguir/:id', usuario.alternarSeguimiento);
-
-/* Actualizar visto */
-router.put('/notificaciones/:id/actualizarVisto', usuario.actualizarVisto);
 
 /* Perfil */
 router.get('/:id/perfil', usuario.perfil);

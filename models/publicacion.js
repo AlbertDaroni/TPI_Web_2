@@ -16,10 +16,6 @@ Publicacion.init(
         },
         descripcion: {
             type: DataTypes.TEXT
-        },
-        denuncias: {
-            type: DataTypes.INTEGER,
-            defaultValue: 0
         }
     }, {
         sequelize,

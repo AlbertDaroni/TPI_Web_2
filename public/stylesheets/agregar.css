@@ -22,7 +22,6 @@ h4 {
 
 /* Formulario */
 form { display: flex; flex-direction: column; gap: 15px; }
-
 label { font-weight: 600; font-size: 0.9rem; color: #262626; }
 
 /* Inputs y Textarea */
@@ -35,7 +34,6 @@ input[type="text"], textarea {
     font-size: 0.9rem;
     background: #fafafa;
 }
-
 textarea { resize: none; }
 
 input:focus, textarea:focus { border-color: #a8a8a8; outline: none; }
@@ -52,9 +50,7 @@ input[type="radio"] { cursor: pointer; }
 
 /* Sección de Etiquetas */
 #seccion-etiquetas { display: flex; flex-direction: column; gap: 8px; }
-
 .fila-etiqueta { display: flex; gap: 10px; }
-
 .fila-etiqueta input { flex: 1; }
 
 /* Botones */
@@ -94,4 +90,72 @@ button[type="submit"]:hover { background-color: #1877f2; }
     font-size: 1.2rem;
     padding: 0;
     margin: 0;
+}
+
+/* Contenedor de las previsualizaciones */
+#contenedor-previsualizaciones {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin: 20px 0;
+    padding: 10px;
+    background-color: #f9f9f9;
+    border: 1px dashed #dbdbdb;
+    border-radius: 6px;
+}
+
+/* Tarjeta individual por cada foto */
+.tarjeta-previsualizacion {
+    display: flex;
+    background: #ffffff;
+    border: 1px solid #dbdbdb;
+    border-radius: 6px;
+    padding: 12px;
+    gap: 20px;
+    align-items: center;
+}
+
+/* Caja de la fotografía */
+.contenedor-prev-imagen {
+    width: 120px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+}
+
+.contenedor-prev-imagen img {
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+    border-radius: 4px;
+    border: 1px solid #dbdbdb;
+}
+
+.contenedor-prev-opciones { flex: 1; }
+.contenedor-prev-opciones h5 {
+    margin: 0 0 10px 0;
+    color: #262626;
+    font-size: 14px;
+}
+
+.opcion-grupo {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+    gap: 15px;
+}
+
+.opcion-grupo label {
+    font-size: 13px;
+    color: #444;
+    width: 160px;
+    margin: 0;
+}
+
+.radio-opciones {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
 }

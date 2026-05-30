@@ -6,30 +6,82 @@ block estilo
 block content 
     div#contenido
         h4 Crear una publicación 
-        form(action="/publicacion/agregar", method="post", enctype="multipart/form-data") 
+        form(action="/publicacion/crear", method="post", enctype="multipart/form-data") 
             label(for="titulo") Título 
             input(type="text", name="titulo", required)
+
             label(for="descripcion") Descripción
             textarea(name="descripcion", cols="50", rows="5") 
-            label(for="imagen") Imagen/es
-            input(type="file", name="imagenes", multiple, required)
-            label(for="licencia") Licencia 
-            div.licencia-container
-                input(type="radio", name="licencia", value="true")
-                small Sí
-                input(type="radio", name="licencia", value="false", checked)
-                small No 
-            label(for="etiquetas") Añadir etiquetas
+
+            label(for="imagenes") Imágenes (hasta 5)
+            input#input-imagenes(type="file", name="imagenes", multiple, required)
+            div#contenedor-previsualizaciones
+
+            label(for="etiquetas") Añadir etiquetas (hasta 5)
             div#seccion-etiquetas
                 div.fila-etiqueta
                     input(type="text", name="etiquetas[]", required)
             button(type="button", onclick="nuevaEtiqueta()") Agregar nueva etiqueta
+
             button(type="submit") Crear
 
     script.
+        const inputImagenes = document.getElementById('input-imagenes');
+        const contenedorPrev = document.getElementById('contenedor-previsualizaciones');
+
+        inputImagenes.addEventListener('change', function() {
+            contenedorPrev.innerHTML = '';
+            const archivos = this.files;
+
+            if (archivos.length > 5) {
+                alert('Solo podés subir hasta 5 fotos');
+                this.value = '';
+                return;
+            }
+
+            if (archivos.length > 0) {
+                Array.from(archivos).forEach((archivo, indice) => {
+                    const lector = new FileReader();
+
+                    lector.onload = function(evento) {
+                        const html = document.createElement('div');
+                        html.className = 'tarjeta-previsualizacion';
+
+                        html.innerHTML = `
+                            <div class="contenedor-prev-imagen">
+                                <img src="${evento.target.result}" alt="Previsualización">
+                            </div>
+                            <div class="contenedor-prev-opciones">
+                                <h5>Configuración de la imagen #${indice + 1}</h5>
+                                <div class="opcion-grupo">
+                                    <label>Licencia</label>
+                                    <div class="radio-opciones">
+                                        <input type="radio" name="licencias[${indice}]" value="true"> Sí
+                                        <input type="radio" name="licencias[${indice}]" value="false" checked> No
+                                    </div>
+                                </div>
+                                <div class="opcion-grupo">
+                                    <label>Añadir Marca de Agua</label>
+                                    <input type="text" name="marcasDeAgua[${indice}]">
+                                </div>
+                            </div>
+                            <button type="button" onclick="eliminarImagen(this)">🗑️</button>
+                        `;
+                        contenedorPrev.appendChild(html);
+                    };
+
+                    lector.readAsDataURL(archivo);
+                });
+            }
+        });
+
         function nuevaEtiqueta() {
             const seccion_etiquetas = document.getElementById('seccion-etiquetas');
+            const cantidad_actual = seccion_etiquetas.querySelectorAll('.fila-etiqueta').length;
             const contenedor = document.createElement('div');
+
+            if (cantidad_actual > 4) return alert('Solo podés añadir hasta 5 etiquetas');
+
             contenedor.className = 'fila-etiqueta';
 
             contenedor.innerHTML = `
@@ -40,4 +92,5 @@ block content
             seccion_etiquetas.appendChild(contenedor);
         }
 
+        function eliminarImagen(boton) { boton.parentElement.remove(); }
         function eliminarEtiqueta(boton) { boton.parentElement.remove(); }

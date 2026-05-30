@@ -1,36 +1,47 @@
 const sequelize = require('../config/db');
-const { Imagen, Usuario, Denuncia, Etiqueta, Validador, Comentario, Valoracion, Publicacion, Notificacion } = require('../models/index');
+const { Imagen, Usuario, Etiqueta, Validador, Notificacion, Comentario, Valoracion, Publicacion } = require('../models/index');
 const { Op } = require('sequelize');
 
 async function contenidoPaginaPrincipal(req, res, next) {
     try {
-        const esValido = await controlDeDenuncias(req, next);
-        if (!esValido) { res.render('notificaciones'); }
-
         const usuario = await Usuario.findByPk(req.session.userId) || null;
+        const tieneDenuncias = await controlDeDenuncias(usuario);
+
         const idsCargados = req.body && req.body.idsCargados ? req.body.idsCargados : [];
         const publicaciones = await Publicacion.findAll({
             where: { id: { [Op.notIn]: idsCargados } },
             order: sequelize.random(), limit: 10,
             include: [
-                { model: Imagen }, { model: Usuario, attributes: ['id', 'nombre', 'foto_perfil'] }, { model: Etiqueta }, { model: Valoracion },
-                { model: Comentario, include: [{ model: Usuario, attributes: ['id', 'nombre', 'foto_perfil'] }] }
+                { model: Etiqueta }, { model: Usuario, attributes: ['id', 'nombre', 'foto_perfil'] },
+                { model: Imagen, 
+                    include: [
+                        { model: Valoracion }, 
+                        { model: Comentario, include: [{ model: Usuario, attributes: ['id', 'nombre', 'foto_perfil'] }]}
+                    ]
+                }
             ]
         });
 
         const datos = publicaciones.map(pub => {
-            const valoracionesPositivas = pub.Valoracions.filter(v => v.valoracion === true);
-            const promedio = pub.Valoracions.length > 0 ? valoracionesPositivas.length / pub.Valoracions.length  * 100 : 0;
-            return { ...pub.toJSON(), promedio: Math.round(promedio) };
+            const publicacionJSON = pub.toJSON();
+
+            publicacionJSON.Imagens = publicacionJSON.Imagens.map(imagen => {
+                const valoraciones = imagen.Valoracions || [];
+                const valoracionesPositivas = valoraciones.filter(v => v.valoracion === true);
+                const promedio = valoraciones.length > 0 ? (valoracionesPositivas.length / valoraciones.length) * 100 : 0;
+                return { ...imagen, cantidad: valoraciones.length, promedio: Math.round(promedio) };
+            });
+
+            return publicacionJSON;
         });
         
         if (req.method === 'POST') {
-            if (datos.length === 0) return res.status(200).json({ html: '', datosNuevos: [], finalizar: true });
+            if (datos.length === 0) return res.status(200).json({ html: '', publicaciones: [], finalizar: true });
 
             let htmlAcumulado = '';
             for (const pub of datos) {
                 await new Promise((resolve, reject) => {
-                    res.render('index_pub', { dato: pub, usuario }, (err, html) => {
+                    res.render('index_pub', { pub: pub, usuario }, (err, html) => {
                         if (err) return reject(err);
                         htmlAcumulado += html;
                         resolve();
@@ -38,47 +49,34 @@ async function contenidoPaginaPrincipal(req, res, next) {
                 });
             }
             
-            return res.json({ html: htmlAcumulado, datosNuevos: datos, finalizar: false });
+            return res.json({ html: htmlAcumulado, publicaciones: datos, finalizar: false });
         }
 
-        res.render('index', { datos, usuario });
+        res.render('index', { publicaciones: datos, usuario, tieneDenuncias });
     } catch (error) { next(error); }
 }
 
-async function controlDeDenuncias(req, next) {
+async function controlDeDenuncias(usuario) {
     try {
-        if (!req.session.userId) return true;
+        if (!usuario) return false;
         
-        let pasa = true;
-        const id_usuario = req.session.userId;
-        const publicaciones = await Publicacion.findAll({ where: { id_usuario: id_usuario, denuncias: { [Op.gt]: 2 } } });
-        const comentarios = await Comentario.findAll({ where: { id_usuario: id_usuario, denuncias: { [Op.gt]: 2 } } });
-        
-        if (publicaciones.length > 0) { for (const pub of publicaciones) { await Validador.create({ id_publicacion: pub.id }); } pasa = false; }
-        if (comentarios.length > 0) pasa = false;
-        
-        const ids_publicacion = publicaciones.map(pub => pub.id);
-        const ids_comentario = comentarios.map(com => com.id);
-        const denunciasPubs = await Denuncia.findAll({ where: { id_publicacion: { [Op.in]: ids_publicacion }, notificada: false } });
-        const denunciasComs = await Denuncia.findAll({ where: { id_comentario: { [Op.in]: ids_comentario }, notificada: false } });
+        const publicaciones = await Publicacion.findAll({ where: { id_usuario: usuario.id } });
+        const imagenes = await Imagen.findAll({ where: { id_publicacion: { [Op.in]: publicaciones.map(p => p.id) } } });
+        const comentarios = await Comentario.findAll({ where: { id_usuario: usuario.id } });
+        const denunciasImgs = await Notificacion.findAll({ where: { tipo_evento: 'Denuncia', id_imagen: { [Op.in]: imagenes.map(i => i.id) }, notificada: false } });
+        const denunciasComs = await Notificacion.findAll({ where: { tipo_evento: 'Denuncia', id_comentario: { [Op.in]: comentarios.map(c => c.id) }, notificada: false } });
 
-        for (const d of denunciasPubs) {
-            await Notificacion.create({
-                tipo_evento: 'Denuncia', motivo: d.motivo, id_dueno: id_usuario,
-                id_causante: d.id_usuario, id_publicacion: d.id_publicacion
-            });
-            await d.update({ notificada: true });
-        }
-        for (const d of denunciasComs) {
-            await Notificacion.create({
-                tipo_evento: 'Denuncia', motivo: d.motivo, id_dueno: id_usuario,
-                id_causante: d.id_usuario, id_comentario: d.id_comentario
-            });
-            await d.update({ notificada: true });
+        for (const d of denunciasImgs) { await d.update({ notificada: true }); }
+        for (const d of denunciasComs) { await d.update({ notificada: true }); }
+
+        const cantImagenes = imagenes.filter(i => denunciasImgs.id_imagen === i.id && denunciasImgs.id_imagen >= 3);
+        for (const imagen of cantImagenes) {
+            const publicacion = await Publicacion.findByPk(imagen.id_publicacion);
+            await Validador.create({ id_publicacion: publicacion.id });
         }
 
-        return pasa;
-    } catch (error) { next(error); }
+        return denunciasImgs.length > 0 || denunciasComs.length > 0;
+    } catch (error) { console.error(error); }
 }
 
 async function controlDeContenido(req, res, next) {

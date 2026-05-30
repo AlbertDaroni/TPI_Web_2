@@ -1,4 +1,4 @@
-const { Imagen, Mensaje, Usuario, Denuncia, Etiqueta, Favorito, Comentario, Publicacion, Notificacion } = require('../models/index'); 
+const { Imagen, Usuario, Etiqueta, Favorito, Comentario, Publicacion, Notificacion } = require('../models/index'); 
 const { Op } = require('sequelize');
 
 async function registrar(req, res, next) {
@@ -146,76 +146,18 @@ async function alternarSeguimiento(req, res, next) {
     } catch (error) { next(error); }
 }
 
-async function notificaciones(req, res, next) {
-    try {
-        const notificaciones = await Notificacion.findAll({
-            where: { id_dueno: req.session.userId },
-            include: [{ model: Usuario, attributes: ['id', 'nombre', 'foto_perfil'], as: 'Causante' }],
-            order: [['createdAt', 'DESC']]
-        });
-        res.render('notificaciones', { notificaciones });
-    } catch (error) { next(); }
-}
-
-async function filtrarNotificaciones(req, res, next) {
-    try {
-        const opcion = req.body.opcion;
-        const id = req.session.userId;
-
-        let whereClause = {};
-        if (opcion === "todas") whereClause = { id_dueno: id };
-        else if (opcion === 'leidas') whereClause = { id_dueno: id, vista: true };
-        else if (opcion === 'no-leidas') whereClause = { id_dueno: id, vista: false };
-        else if (['Denuncia', 'Interés', 'Valorizó', 'Comentó'].includes(opcion)) whereClause = { id_dueno: id, tipo_evento: opcion };
-        else return res.status(404).render('error', { error: new Error('Dato inválido') });
-
-        const notificaciones = await Notificacion.findAll({ 
-            where: whereClause, 
-            include: [{ model: Usuario, attributes: ['id', 'nombre', 'foto_perfil'], as: 'Causante' }],
-            order: [['createdAt', 'DESC']] 
-        });
-        res.render('notificaciones', { notificaciones });
-    } catch (error) { next(); }
-}
-
-async function actualizarVisto(req, res, next) {
-    try {
-        const id_notificacion = req.params.id;
-
-        if (isNaN(Number(id_notificacion))) { return res.status(400).json({ error: 'Dato inválido' }); }
-
-        const vista = await Notificacion.update({ vista: true }, { where: { id: id_notificacion } });
-        res.json({ vista: vista[0] === 1 ? true : false });
-    } catch (error) { next(error); }
-}
-
-async function eliminarNotificaciones(req, res, next) {
-    try {
-        await Notificacion.destroy({ where: { id_dueno: req.session.userId } });
-        res.redirect('/usuario/notificaciones');
-    } catch(error) { next(error); }
-}
-
-async function chats(req, res, next) {
-    try {
-        const mensajes = await Mensaje.findAll({ 
-            where: { id_usuario: req.session.userId }, 
-            include: [{ model: Usuario, as: 'Receptor' }], order: [['createdAt', 'DESC']] 
-        });
-        res.render('chats', { mensajes });
-    } catch (error) { next(error); }
-}
-
 async function obtenerDatosCompletosPublicacion(ids) {
     if (!ids || ids.length === 0) return [];
     return await Publicacion.findAll({
         where: { id: { [Op.in]: ids } },
         include: [
             { model: Usuario, as: 'Usuario' },
-            { model: Imagen },
             { model: Etiqueta },
-            { model: Denuncia },
-            { model: Comentario, include: [{model: Usuario}] }
+            { model: Imagen, include: [
+                { model: Comentario, include: [
+                    { model: Usuario, attributes: ['id', 'nombre', 'foto_perfil'] }
+                ] }
+            ] },
         ],
         order: [['createdAt', 'DESC']]
     });
@@ -228,10 +170,5 @@ module.exports = {
     perfil,
     seguidores,
     seguidos,
-    alternarSeguimiento,
-    notificaciones,
-    filtrarNotificaciones,
-    actualizarVisto,
-    eliminarNotificaciones,
-    chats
+    alternarSeguimiento
 };

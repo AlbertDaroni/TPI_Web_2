@@ -20,6 +20,10 @@ Notificacion.init(
         vista: {
             type: DataTypes.BOOLEAN,
             defaultValue: false
+        },
+        notificada: {
+            type: DataTypes.BOOLEAN,
+            defaultValue: false
         }
     }, {
         sequelize,

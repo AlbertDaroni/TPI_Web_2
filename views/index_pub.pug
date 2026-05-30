@@ -1,69 +1,79 @@
-div.contenedor-post(data-id=dato.id)
-  div.publicacion(id=`pub-${dato.id}`)
-    div.perfil-header(onclick=`location.href="/usuario/${dato.Usuario.id}/perfil"`)
-      img(src=dato.Usuario.foto_perfil, width="40")
-      h5= dato.Usuario.nombre
+div.contenedor-post(data-id=pub.id)
+  div.publicacion(id=`pub-${pub.id}`)
+    div.perfil-header(onclick=`location.href="/usuario/${pub.Usuario.id}/perfil"`)
+      img(src=pub.Usuario.foto_perfil, width="40")
+      h5= pub.Usuario.nombre
 
     div.cuerpo-publicacion
       div.foto-seccion
-        div(id=`imagen-container-${dato.id}`, onclick=`${ver ? '' : `location.href="/publicacion/ver/${dato.id}"`}`)
+        - var imagenActiva = pub.Imagens[0]
+        div(id=`imagen-container-${pub.id}`, onclick=`location.href="/publicacion/ver/${pub.id}"`)
           if (usuario)
-            img.main-img(src=dato.Imagens[0].imagen, style="width: 100%")
-            p= (dato.Imagens[0].licencia) ? 'Imagen sin licencia' : 'Imagen con licencia'
-          else if (dato.Imagens[0].licencia)
+            img.main-img(src=imagenActiva.imagen, style="width: 100%")
+            p= (imagenActiva.licencia) ? 'Imagen sin licencia' : 'Imagen con licencia'
+          else if (imagenActiva.licencia)
             img.main-img(src="/images/imagen_censurada.png", style="width: 100%")
             p Imagen con licencia
           else 
-            img.main-img(src=dato.Imagens[0].imagen, style="width: 100%")
+            img.main-img(src=imagenActiva.imagen, style="width: 100%")
             p Imagen sin licencia
         
-        if (dato.Imagens.length > 1)
-          button(onclick=`mover(${dato.id}, -1)`) ◀️
-          span(id=`pos-${dato.id}`) 1 / #{dato.Imagens.length}
-          button(onclick=`mover(${dato.id}, +1)`) ▶️
+        if (pub.Imagens.length > 1)
+          button(onclick=`mover(${pub.id}, -1)`) ◀️
+          span(id=`pos-${pub.id}`) 1 / #{pub.Imagens.length}
+          button(onclick=`mover(${pub.id}, +1)`) ▶️
 
-    div#informacion
-      if (dato.Etiqueta && dato.Etiqueta.length > 0)
-        each etiqueta in dato.Etiqueta 
-          a(href=`/publicacion/etiqueta/${etiqueta.nombre}`, style="display: inline-block; margin-right: 5px;")= '#' + etiqueta.nombre
-      h5= dato.titulo
-      p= new Date(dato.createdAt).toLocaleDateString()
-      p= dato.descripcion
+      div#informacion
+        if (pub.Etiqueta && pub.Etiqueta.length > 0)
+          each etiqueta in pub.Etiqueta 
+            a(href=`/publicacion/etiqueta/${etiqueta.nombre}`, style="display: inline-block; margin-right: 5px;")= '#' + etiqueta.nombre
+        h5= pub.titulo
+        p= new Date(pub.createdAt).toLocaleDateString()
+        p= pub.descripcion
 
-    div#acciones
-      if (usuario && dato.id_usuario !== usuario.id)
-        if (dato.Valoracions.id_usuario === usuario.id)
-          button(onclick=`actualizarLikes(${dato.id}, ${true})`, class="boton-like") ❤️
-          button(onclick=`actualizarLikes(${dato.id}, ${false})`, class="boton-like") 🩶
-            span(id=`valoracion-pub-${dato.id}`)= dato.promedio + '%'
-        else 
-          button(type="button") ❤️
-            span(id=`valoracion-pub-${dato.id}`)= dato.promedio + '%'
-        button(onclick=`alternarComentarios(${dato.id})`) 💬
-          span(id=`comentarios-pub-${dato.id}`)= dato.Comentarios.length
-        button(onclick=`guardarPublicacion(${dato.id})`) 📁
-        button(onclick=`marcarInteres(${dato.id})`) ⭐
-        a(href=`/publicacion/${dato.id}/denunciar`) 🚩
-      else
-        button(type="button") ❤️
-          span(id=`valoracion-pub-${dato.id}`)= dato.promedio + '%'
-        button(onclick=`alternarComentarios(${dato.id})`) 💬
-          span(id=`comentarios-pub-${dato.id}`)= dato.Comentarios.length
-    
-    div(id=`guardarPublicacion-${dato.id}`, style="display: none;")
-      form(action=`/publicacion/${dato.id}/guardar`, method="post")
-        input(type="text", name="nombreLista", placeholder="Nombre de la lista", required) 
-        button(type="submit") 📩
+      div#acciones
+        if (usuario && pub.id_usuario !== usuario.id)
+          - var valorizo = imagenActiva.Valoracions && imagenActiva.Valoracions.some(v => v.id_usuario === usuario.id)
+          if (!valorizo)
+            div(id=`contenedor-valoraciones-pub-${pub.id}`)
+              div(id=`contenedor-voto-pub-${pub.id}`, style="display: inline-block;")
+                button(onclick=`actualizarLikes(${imagenActiva.id}, ${true}, ${pub.id})`, class="boton-like") ❤️
+                button(onclick=`actualizarLikes(${imagenActiva.id}, ${false}, ${pub.id})`, class="boton-like") 🩶
+              span(id=`valoracion-pub-${pub.id}`)= imagenActiva.promedio + '%'
+              span(id=`cantidad-valoraciones-pub-${pub.id}`)= imagenActiva.cantidad
+          else 
+            div(id=`contenedor-valoraciones-pub-${pub.id}`)
+              button(type="button", class="boton-like") ❤️
+                span(id=`valoracion-pub-${pub.id}`)= imagenActiva.promedio + '%'
+                span(id=`cantidad-valoraciones-pub-${pub.id}`)= imagenActiva.cantidad
+          button(onclick=`alternarComentarios(${pub.id})`) 💬
+            span(id=`comentarios-pub-${pub.id}`)= imagenActiva.Comentarios.length
+          button(onclick=`guardarPublicacion(${pub.id})`) 📁
+          button(onclick=`marcarInteres(${pub.id})`) ⭐
+          a(href=`/publicacion/${imagenActiva.id}/denunciar`) 🚩
+        else
+          div(id=`contenedor-valoraciones-pub-${pub.id}`)
+            button(type="button", class="boton-like") ❤️
+              span(id=`valoracion-pub-${pub.id}`)= imagenActiva.promedio + '%'
+              span(id=`cantidad-valoraciones-pub-${pub.id}`)= imagenActiva.cantidad
+          button(onclick=`alternarComentarios(${pub.id})`) 💬
+            span(id=`comentarios-pub-${pub.id}`)= imagenActiva.Comentarios.length
+      
+      div(id=`guardarPublicacion-${pub.id}`, style="display: none;")
+        form(action=`/publicacion/${pub.id}/guardar`, method="post")
+          input(type="text", name="nombreLista", placeholder="Nombre de la lista", required) 
+          button(type="submit") 📩
 
-    div(id=`motivo-interes-${dato.id}`, style="display: none;")
-      form(action=`/publicacion/${dato.id}/marcarInteres`, method="post") 
-        textarea(name="motivoInteres", cols="30", rows="5", placeholder="Escribí el motivo de tu interés", required)
-        button(type="submit") 📩
+      div(id=`motivo-interes-${pub.id}`, style="display: none;")
+        form(action=`/publicacion/${pub.id}/marcarInteres`, method="post") 
+          textarea(name="motivoInteres", cols="30", rows="5", placeholder="Escribí el motivo de tu interés", required)
+          button(type="submit") 📩
 
-  div(id=`seccion-comentarios-${dato.id}`, style="display: none;")
+  div(id=`seccion-comentarios-${pub.id}`, style="display: none;")
     div.form-comentario
       if (usuario)
-        form(id=`form-agregar-comentario-${dato.id}`, action=`/publicacion/${dato.id}/comentario/agregar`, method="post") 
+        form(id=`form-agregar-comentario-${pub.id}`, onsubmit=`agregarComentario(event, ${pub.id})`, method="post") 
+          input(type="hidden", name="id_imagen", id=`input-imagen-comentario-${pub.id}`, value=imagenActiva.id)
           textarea(name='comentario', cols="30", rows="5", placeholder="Escribí un comentario...")
           button(type="submit") Comentar
-    div(id=`lista-comentarios-pub-${dato.id}`) 
+    div(id=`lista-comentarios-pub-${pub.id}`)

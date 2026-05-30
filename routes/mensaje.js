@@ -5,8 +5,11 @@ const mensaje = require('../controladores/mensaje');
 
 router.use(protegerRuta);
 
+/* Obtener */
+router.get('/chats', mensaje.obtener)
+
 /* Crear */
-router.post('/crear/seguido/:id', mensaje.crear);
+router.put('/crear', mensaje.crear);
 
 /* Modificar */
 router.put('/:id/modificar', mensaje.modificar);

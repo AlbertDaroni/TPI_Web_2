@@ -15,6 +15,10 @@ Imagen.init(
             allowNull: false,
             defaultValue: '/images/sin_imagen.png'
         },
+        comentarios: {
+            type: DataTypes.BOOLEAN,
+            defaultValue: true
+        },
         licencia: {
             type: DataTypes.BOOLEAN,
             defaultValue: false

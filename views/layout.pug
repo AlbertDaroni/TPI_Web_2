@@ -3,6 +3,7 @@ html
   head
     title Instragram Trucho
     link(rel='stylesheet', href='/stylesheets/global.css')
+    link(rel="icon", href="/sin_imagen.png", type="image/x-icon")
     block estilo
   body
     block content
@@ -14,15 +15,15 @@ html
             button#button-buscador(onclick="alternarBuscador()") 🔎
             form#form-busqueda(action="/buscar", method="get", style="display: none;")
               input#input-buscador(type="text", name="nombre", placeholder="Ingresá el nombre...")
-            a(href="/publicacion/agregar") ➕
+            a(href="/publicacion/crear") ➕
             a(href="/") 🏠
-            a(href="/usuario/chats") 📫
-            a(href="/usuario/notificaciones") ✉️
+            a(href="/mensaje/chats") 📫
+            a(href="/notificacion") ✉️
             a(href=`/usuario/${userIdSesion}/perfil`) 👤
           else 
             a(href="/usuario/ingresar") 🗝️ 
             a(href="/") 🏠
-            a(href="/usuario/registrar") 📓
+            a(href="/usuario/registrarse") 📓
 
     script.
       function alternarBuscador() {

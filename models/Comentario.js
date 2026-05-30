@@ -13,10 +13,6 @@ Comentario.init(
         texto: {
             type: DataTypes.TEXT,
             allowNull: false
-        },
-        denuncias: {
-            type: DataTypes.INTEGER,
-            defaultValue: 0
         }
     }, {
         sequelize,
