@@ -27,6 +27,7 @@ block content
                 div#seguidos-seguidores
                     a(href=`/usuario/${usuario.id}/seguidores`)
                         span= seguidores 
+
                         |  seguidores
                     a(href=`/usuario/${usuario.id}/seguidos`)
                         span= seguidos 
@@ -45,18 +46,28 @@ block content
         nav#publicaciones-botones
             if (esMiPerfil)
                 div.tab-buttons
-                    button(onclick="mostrarSeccion('mis-publicaciones')") 
+                    button.active(onclick="mostrarSeccion('mis-publicaciones', false)") 
                         i.icon-grid 
+
                         | Publicaciones
-                    button(onclick="mostrarSeccion('publicaciones-seguidos')") 
+                    button(onclick="mostrarSeccion('publicaciones-seguidos', false)") 
                         i.icon-people
                         | Seguidos
-                    button(onclick="mostrarSeccion('mis-favoritos')") 
+                    button(onclick="mostrarSeccion('mis-favoritos', true)") 
                         i.icon-bookmark
                         | Guardado
             else
                 div.tab-buttons
                     button.active Publicaciones
+
+        div#contenedor-filtro-favoritos(style="display: none; margin: 15px 0; justify-content: center; align-items: center; gap: 10px;")
+            form(onsubmit="filtrarListaFavoritos(event)") 
+                select#listas-favoritos(name="listas" style="padding: 5px;")
+                    option(value="todas") Todas 
+                    if (nombreListas && nombreListas.length > 0)
+                        each lista in nombreListas 
+                            option(value=lista)= lista 
+                button(type="submit") Buscar
 
         main#secciones-grid
             div#mis-publicaciones.seccion-perfil
@@ -71,12 +82,46 @@ block content
 
     script.
         // MOSTRAR SECCIÓN SELECCIONADA
-        function mostrarSeccion(idSeccion) {
+        function mostrarSeccion(idSeccion, mostrarFiltro) {
             document.querySelectorAll('.seccion-perfil').forEach(div => { div.style.display = 'none'; });
             
             const target = document.getElementById(idSeccion);
-            target.style.display = 'grid';
+            if (target) target.style.display = 'grid';
+            
+            const panelFiltro = document.getElementById('contenedor-filtro-favoritos');
+            if (panelFiltro) panelFiltro.style.display = mostrarFiltro ? 'flex' : 'none';
             
             document.querySelectorAll('#publicaciones-botones button').forEach(btn => btn.classList.remove('active'));
-            event.currentTarget.classList.add('active');
+            if (event && event.currentTarget) event.currentTarget.classList.add('active');
+        }
+
+        async function filtrarListaFavoritos(evento) {
+            try {
+                evento.preventDefault();
+
+                const listas_favoritos = document.getElementById('listas-favoritos');
+                const lista = listas_favoritos.value;
+                const contenedorGridFavoritos = document.getElementById('mis-favoritos');
+                const res = await fetch('/usuario/perfil/filtrar_lista', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ lista })
+                });
+
+                const publicaciones = await res.json();
+
+                contenedorGridFavoritos.innerHTML = '';
+
+                if (publicaciones && publicaciones.length > 0) {
+                    publicaciones.forEach(pub => {
+                        const urlImagen = pub.Imagens && pub.Imagens.length > 0 ? pub.Imagens[0].imagen : '/images/sin_imagen.png';
+                        const htmlMiniatura = `
+                            <div class="publicacion-mini" onclick="location.href='/publicacion/ver/${pub.id}'">
+                                <img src="${urlImagen}">
+                            </div>
+                        `;
+                        contenedorGridFavoritos.insertAdjacentHTML('beforeend', htmlMiniatura);
+                    });
+                } else { contenedorGridFavoritos.innerHTML = '<p class="sin-contenido">Aún no hay publicaciones en esta lista</p>'; }
+            } catch(error) { console.error(error); }
         }

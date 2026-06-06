@@ -24,12 +24,29 @@ div.contenedor-post(data-id=pub.id)
           button(onclick=`mover(${pub.id}, +1)`) ▶️
 
       div#informacion
-        if (pub.Etiqueta && pub.Etiqueta.length > 0)
-          each etiqueta in pub.Etiqueta 
-            a(href=`/publicacion/etiqueta/${etiqueta.nombre}`, style="display: inline-block; margin-right: 5px;")= '#' + etiqueta.nombre
-        h5= pub.titulo
-        p= new Date(pub.createdAt).toLocaleDateString()
-        p= pub.descripcion
+        if (usuario && pub.id_usuario === usuario.id && pub.modificable)
+          form(onsubmit=`modificarPublicacion(event, ${pub.id})`, method="post") 
+            div#seccion-etiquetas
+              if (pub.Etiqueta && pub.Etiqueta.length > 0)
+                each etiqueta in pub.Etiqueta 
+                  div(id="etiqueta", style="display: inline-block;")
+                    input(type="text", name="nuevaEtiqueta[]", value=etiqueta.nombre, required)
+                    input(type="hidden", name="nuevaEtiquetaId[]", value=etiqueta.id, required)
+                    button(type="button", onclick=`eliminarEtiqueta(this, ${etiqueta.id})`) 🗑️
+            button(type="button", onclick="nuevaEtiqueta()") ➕
+            h5
+              input(type="text", name="nuevoTitulo", value=pub.titulo)
+            p= new Date(pub.createdAt).toLocaleDateString()
+            p 
+              textarea(name="nuevaDescripcion", cols="92", rows="10")= pub.descripcion
+            button(type="submit") Modificar
+        else
+          if (pub.Etiqueta && pub.Etiqueta.length > 0)
+            each etiqueta in pub.Etiqueta 
+              a(href=`/publicacion/etiqueta/${etiqueta.nombre}`, id=`etiqueta-${etiqueta.id}`, style="display: inline-block; margin-right: 5px;")= '#' + etiqueta.nombre
+          h5= pub.titulo
+          p= new Date(pub.createdAt).toLocaleDateString()
+          p= pub.descripcion
 
       div#acciones
         if (usuario && pub.id_usuario !== usuario.id)
@@ -56,8 +73,15 @@ div.contenedor-post(data-id=pub.id)
             button(type="button", class="boton-like") ❤️
               span(id=`valoracion-pub-${pub.id}`)= imagenActiva.promedio + '%'
               span(id=`cantidad-valoraciones-pub-${pub.id}`)= imagenActiva.cantidad
-          button(onclick=`alternarComentarios(${pub.id})`) 💬
-            span(id=`comentarios-pub-${pub.id}`)= imagenActiva.Comentarios.length
+          div 
+            button(onclick=`alternarComentarios(${pub.id})`) 💬
+              span(id=`comentarios-pub-${pub.id}`)= imagenActiva.Comentarios.length
+            if (usuario && pub.id_usuario === usuario.id && pub.modificable)
+              - var color = imagenActiva.comentarios ? '🟢' : '🔴'
+              button(onclick=`cerrarAbrirComentarios(${imagenActiva.id}, ${imagenActiva.comentarios})`, id=`cerrarAbrir-comentarios-img-${imagenActiva.id}`) #{color}
+          if (usuario && pub.id_usuario === usuario.id && pub.modificable)
+            a(href=`/publicacion/imagen/eliminar/${imagenActiva.id}`) Eliminar imagen
+            a(href=`/publicacion/eliminar/${pub.id}`) Eliminar publicación
       
       div(id=`guardarPublicacion-${pub.id}`, style="display: none;")
         form(action=`/publicacion/${pub.id}/guardar`, method="post")
@@ -71,7 +95,7 @@ div.contenedor-post(data-id=pub.id)
 
   div(id=`seccion-comentarios-${pub.id}`, style="display: none;")
     div.form-comentario
-      if (usuario)
+      if (usuario && imagenActiva.comentarios)
         form(id=`form-agregar-comentario-${pub.id}`, onsubmit=`agregarComentario(event, ${pub.id})`, method="post") 
           input(type="hidden", name="id_imagen", id=`input-imagen-comentario-${pub.id}`, value=imagenActiva.id)
           textarea(name='comentario', cols="30", rows="5", placeholder="Escribí un comentario...")

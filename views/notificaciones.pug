@@ -29,7 +29,7 @@ block content
 
                     - var urlPub = ''
                     if (n.Comentario)
-                        - urlPub = `location.href='/comentario/ver/${n.Comentario.id}'`
+                        - urlPub = `location.href='/publicacion/ver/${n.Comentario.Imagen.id_publicacion}'`
                     else if (n.Imagen && n.Imagen.Publicacion)
                         - urlPub = `location.href='/publicacion/ver/${n.Imagen.Publicacion.id}'`
                         
@@ -64,6 +64,9 @@ block content
                                 |  hizo una denuncia.
                                 if (n.Imagen && n.Imagen.Publicacion)
                                     strong= ` "${n.Imagen.Publicacion.titulo}"`
+                                if (n.Comentario)
+                                    br
+                                    span= `${n.Comentario.texto}`
                                 br
                                 if (n.motivo)
                                     small= `⚠️ ${n.motivo}`
@@ -100,8 +103,9 @@ block content
         // MARCAR TODAS COMO VISTO
         async function actualizarTodasVisto() {
             try {
-                for (n of notificaciones) {
-                    const boton_visto = document.getElementById(`boton-visto-${n.id}`);
+                const ids = notificaciones.map(n => n.id);
+                for (const id of ids) {
+                    const boton_visto = document.getElementById(`boton-visto-${id}`);
                     const res = await fetch(`/notificacion/actualizarVisto`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },

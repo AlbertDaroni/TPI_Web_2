@@ -6,8 +6,9 @@ async function obtener(req, res, next) {
         const notificaciones = await Notificacion.findAll({
             where: { id_dueno: req.session.userId },
             include: [
-                { model: Usuario, attributes: ['id', 'nombre', 'foto_perfil'], as: 'Causante' }, 
-                { model: Imagen, include: [{ model: Publicacion }] }, { model: Comentario }
+                { model: Usuario, attributes: ['id', 'nombre', 'foto_perfil'], as: 'Causante' },
+                { model: Imagen, include: [{ model: Publicacion }] },
+                { model: Comentario, include: [{ model: Imagen, attributes: ['id_publicacion'] }] }
             ],
             order: [['createdAt', 'DESC']]
         });
@@ -30,8 +31,9 @@ async function filtrar(req, res, next) {
         const notificaciones = await Notificacion.findAll({ 
             where: whereClause, 
             include: [
-                { model: Usuario, attributes: ['id', 'nombre', 'foto_perfil'], as: 'Causante' }, 
-                { model: Imagen, include: [{ model: Publicacion }] }, { model: Comentario }
+                { model: Usuario, attributes: ['id', 'nombre', 'foto_perfil'], as: 'Causante' },
+                { model: Imagen, include: [{ model: Publicacion }] },
+                { model: Comentario, include: [{ model: Imagen, attributes: ['id_publicacion'] }] }
             ],
             order: [['createdAt', 'DESC']] 
         });
@@ -57,9 +59,4 @@ async function eliminar(req, res, next) {
     } catch(error) { next(error); }
 }
 
-module.exports= {
-    obtener,
-    filtrar,
-    actualizarVisto,
-    eliminar
-}
+module.exports= { obtener, filtrar, actualizarVisto, eliminar }

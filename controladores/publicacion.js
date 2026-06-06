@@ -28,23 +28,45 @@ async function crear(req, res, next) {
 
 async function modificar(req, res, next) {
     try {
-        const { titulo, descripcion, etiquetas, imagenes } = req.body;
-        const id_publicacion = req.params.id;
-
-        if (!titulo || etiquetas.length === 0 || imagenes.length === 0 || isNaN(Number(id_publicacion))) 
-            { res.render('modificarPublicacion', { error: 'Datos inválidos' }); }
-
-        await Publicacion.update({ titulo: titulo, descripcion: descripcion }, { where: { id: id_publicacion } });
-        for (const img of imagenes) {
-            await Imagen.update({ imagen: img.imagen, licencia: img.licencia, copyright: img.copyright },
-                { where: { id_publicacion: id_publicacion } });
-        }
-        for (const tag of etiquetas) {
-            await Etiqueta.update({ nombre: tag.nombre },
-                { where: { id_publicacion: id_publicacion } });
+        const { id, titulo, descripcion, idsEtiquetas, etiquetas } = req.body;
+        console.log(id, titulo, descripcion, idsEtiquetas, etiquetas);
+        
+        await Publicacion.update({ titulo: titulo, descripcion: descripcion }, { where: { id: id } });
+        if (etiquetas && etiquetas.length > 0 && idsEtiquetas && idsEtiquetas.length > 0) {
+            for (let i = 0; i < etiquetas.length; i++) {
+                await Etiqueta.update({ nombre: etiquetas[i] }, { where: { id: idsEtiquetas[i] } });
+            }
         }
 
-        res.redirect(`/#pub-${id_publicacion}`);
+        res.json({ titulo: titulo, descripcion: descripcion, etiquetas: etiquetas });
+    } catch (error) { next(error); }
+}
+
+async function modificarEtiqueta(req, res, next) {
+    try {
+        const { id, nombre } = req.body;
+        if (isNaN(Number(id)) || !nombre) return res.status(400).render('error', { error: new Error('Datos inválidos') });
+        const nuevaEtiqueta = await Etiqueta.update({ nombre: nombre }, { where: { id: id } });
+        res.json({ ok: true });
+    } catch (error) { next(error); }
+}
+
+async function eliminarEtiqueta(req, res, next) {
+    try {
+        const { id } = req.body;
+        if (isNaN(Number(id))) return res.status(400).render('error', { error: new Error('Datos inválidos') });
+        await Etiqueta.destroy({ where: { id: id } });
+        res.json({ ok: true });
+    } catch (error) { next(error); }
+}
+
+async function eliminarImagen(req, res, next) {
+    try {
+        const id = req.params.id;
+        if (isNaN(Number(id))) return res.status(400).render('error', { error: new Error('Datos inválidos') });
+        await Imagen.destroy({ where: { id: id } });
+
+        res.redirect('back');
     } catch (error) { next(error); }
 }
 
@@ -54,7 +76,6 @@ async function eliminar(req, res, next) {
         const id_usuario = req.session.userId;
 
         if (isNaN(Number(id_publicacion))) return res.status(400).render('error', { error: new Error('Datos inválidos') });
-
         await Publicacion.destroy({ where: { id: id_publicacion } });
 
         res.redirect(`/usuario/${id_usuario}/perfil`);
@@ -133,7 +154,7 @@ async function buscarPorEtiqueta(req, res, next) {
 
         const usuario = await Usuario.findByPk(req.session.userId);
         const publicaciones = await Publicacion.findAll({
-            limit: 50,
+            limit: 10,
             include: [
                 { model: Imagen, include: [{ model: Valoracion }, { model: Comentario, include: [{ model: Usuario, attributes: ['id', 'nombre', 'foto_perfil'] }] }] },
                 { model: Usuario, attributes: ['id', 'nombre', 'foto_perfil'] }, { model: Etiqueta, where: { nombre: nombre } }
@@ -186,6 +207,9 @@ async function ver(req, res, next) {
 module.exports = {
     crear,
     modificar,
+    modificarEtiqueta,
+    eliminarEtiqueta,
+    eliminarImagen,
     eliminar,
     denunciar,
     marcarInteres,

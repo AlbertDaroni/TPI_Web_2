@@ -17,6 +17,9 @@ router.use(protegerRuta);
 router.get('/modificar', usuario.modificar);
 router.post('/modificar', upload.single('imagen'), usuario.modificar);
 
+/* Filtrar listas de favoritos */
+router.post('/perfil/filtrar_lista', usuario.filtrarListaFavoritos);
+
 /* Seguir / Dejar de seguir */
 router.post('/perfil/seguir/:id', usuario.alternarSeguimiento);
 

@@ -62,7 +62,7 @@ app.use((err, req, res, next) => {
 
 sequelize.sync({ alter: true, force: false })
   .then(async () => {
-    console.log('Modelos sincronizados con la base de datos')
+    console.log('Modelos sincronizados con la base de datos');
     // try { await popular.popular(); } catch (error) { console.log(error); }
 
     const puerto = 3000;

@@ -8,13 +8,16 @@ router.use(protegerRuta);
 /* Obtener */
 router.get('/chats', mensaje.obtener)
 
+/* Obtener chat */
+router.post('/chat', mensaje.obtenerChat);
+
 /* Crear */
 router.put('/crear', mensaje.crear);
 
 /* Modificar */
-router.put('/:id/modificar', mensaje.modificar);
+router.put('/modificar', mensaje.modificar);
 
 /* Eliminar  */
-router.delete('/:id/eliminar', mensaje.eliminar);
+router.delete('/eliminar', mensaje.eliminar);
 
 module.exports = router;

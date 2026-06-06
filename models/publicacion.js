@@ -16,6 +16,10 @@ Publicacion.init(
         },
         descripcion: {
             type: DataTypes.TEXT
+        },
+        modificable: {
+            type: DataTypes.BOOLEAN,
+            defaultValue: true
         }
     }, {
         sequelize,

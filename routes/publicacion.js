@@ -19,8 +19,17 @@ router.get('/ver/:id', publicacion.ver);
 router.get('/:id/denunciar', publicacion.denunciar);
 router.post('/denunciar', publicacion.denunciar);
 
-/* Eliminar */
-router.post('/:id/eliminar', publicacion.eliminar);
+/* Modificar */
+router.put('/modificar', publicacion.modificar);
+
+/* Eliminar etiqueta */
+router.delete('/eliminarEtiqueta', publicacion.eliminarEtiqueta);
+
+/* Eliminar imagen */
+router.get('/imagen/eliminar/:id', publicacion.eliminarImagen);
+
+/* Eliminar publicación */
+router.post('/eliminar/:id', publicacion.eliminar);
 
 /* Marcar interés */
 router.post('/:id/marcarInteres', publicacion.marcarInteres);

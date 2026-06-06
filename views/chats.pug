@@ -24,35 +24,41 @@ block content
                 button#boton-enviar(onclick='actualizarMensajes()', disabled) ⬆️
 
     script.
-        const mensajes = !{JSON.stringify(mensajes || [])};
-        const contactos = !{JSON.stringify(contactos || [])};
-        const userId = !{JSON.stringify(userId || null)};
+        const usuario = !{JSON.stringify(usuario || null)};
         let idSeguido;
 
         // Mostrar los mensajes de un contacto
-        function mostrarMensajes(id_seguido) {
+        async function mostrarMensajes(id_seguido) {
             const contenedor_mensajes = document.getElementById('contenedor-mensajes');
             const lista_mensajes = document.getElementById('lista-mensajes');
             const input_mensaje = document.getElementById('input-mensaje');
             const boton_enviar = document.getElementById('boton-enviar');
 
             idSeguido = id_seguido;
-            const mensajesFiltrados = mensajes.filter(m => {
-                (m.id_usuario === userId && m.id_seguido === id_seguido) ||
-                (m.id_usuario === id_seguido && m.id_seguido === userId)
+            const res = await fetch('/mensaje/chat', {
+                method: 'POST',
+                headers: { 'Content-type': 'application/json' },
+                body: JSON.stringify({ id_seguido: id_seguido })
             });
-            console.log(JSON.stringify(mensajesFiltrados, null, 2));
-            console.log(JSON.stringify(contactos, null, 2));
+
+            const mensajes = await res.json();
             let html = '';
             
-            mensajesFiltrados.forEach(m => {
+            mensajes.forEach(m => {
+                const soyDueño = m.Emisor.id === usuario.id;
+                const clase = soyDueño ? 'mensaje propio' : 'mensaje';
+
                 html += `
-                    <div class="mensaje" id="msg-container-${m.id}">
+                    <div class="${clase}" id="msg-container-${m.id}">
                         <div>
                             <p>${new Date(m.createdAt).toLocaleString()}: <strong id="texto-mensaje-${m.id}">${m.texto}</strong></p>
                         </div>
+                `;
+
+                if (soyDueño) {
+                    html += `
                         <div class="acciones">
-                            <button onclick="alternarFormModificar(${m.id})">✏️</button>
+                        <button onclick="alternarFormModificar(${m.id})">✏️</button>
                             <button onclick="eliminar(${m.id}, this)">🗑️</button>
                             
                             <div id="modificar-form-${m.id}" style="display: none;">
@@ -60,8 +66,10 @@ block content
                                 <button onclick="modificar(${m.id})">✅</button>
                             </div>
                         </div>
-                    </div>
-                `;
+                    `;
+                }
+
+                html += '</div>';
             });
 
             lista_mensajes.innerHTML = html;
@@ -91,8 +99,14 @@ block content
         // Eliminar un mensaje
         async function eliminar(id_mensaje, elemento) {
             try {
-                const res = await fetch(`/mensaje/${id_mensaje}/eliminar`, { method: 'DELETE' });
-                if (res.ok) elemento.closest('.mensaje').remove();
+                const res = await fetch(`/mensaje/eliminar`, {
+                    method: 'DELETE',
+                    headers: { 'Content-type': 'application/json' },
+                    body: JSON.stringify({ id: id_mensaje })
+                });
+                
+                const data = await res.json();
+                if (data.ok) elemento.closest('.mensaje').remove();
             } catch (error) { console.error(error); }
         }
 
@@ -106,10 +120,10 @@ block content
         async function modificar(id_mensaje) {
             try {
                 const nuevoTexto = document.getElementById(`input-edit-${id_mensaje}`).value;
-                const res = await fetch(`/mensaje/${id_mensaje}/modificar`, {
+                const res = await fetch(`/mensaje/modificar`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ texto: nuevoTexto })
+                    body: JSON.stringify({ texto: nuevoTexto, id_mensaje: id_mensaje })
                 });
                 
                 if (res.ok) {
@@ -122,7 +136,7 @@ block content
         // Actualizar mensajes
         async function actualizarMensajes() {
             const input_mensaje = document.getElementById('input-mensaje');
-            const texto = input.value;
+            const texto = input_mensaje.value;
             if(!texto.trim()) return;
 
             try {
@@ -131,11 +145,9 @@ block content
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ texto: texto, id_seguido: idSeguido })
                 });
-                if(res.ok) {
-                    const m = await res.json();
-                    mensajes.push(m);
-                    mostrarMensajes(idSeguido);
-                    input_mensaje.value = '';
-                }
+
+                const data = await res.json();
+                input_mensaje.value = '';
+                await mostrarMensajes(idSeguido);
             } catch (error) { console.error(error); }
         }

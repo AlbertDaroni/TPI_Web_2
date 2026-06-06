@@ -51,20 +51,32 @@ async function modificar(req, res, next) {
     }
 }
 
+async function filtrarListaFavoritos(req, res, next) {
+    try {
+        const { lista } = req.body;
+        const whereClause = { id_usuario: req.session.userId };
+
+        if (!lista) { return res.status(404).render('error', { error: new Error('Dato inválido') }); }
+        if (lista && lista !== 'todas') whereClause.nombre = lista;
+        const favoritos = await Favorito.findAll({ where: whereClause });
+        const publicaciones = await obtenerDatosCompletosPublicacion(favoritos.map(f => f.id_publicacion));
+        res.json(publicaciones);
+    } catch (error) { next(error); }
+}
+
 async function perfil(req, res, next) {
     try {
-        const id_perfil = req.params.id;
-        const id_registrado = req.session.userId;
-        const esMiPerfil = Number(id_perfil) === Number(id_registrado);
+        const id_perfil = Number(req.params.id);
+        const id_registrado = Number(req.session.userId);
+        const esMiPerfil = id_perfil === id_registrado;
 
-        if (isNaN(Number(id_perfil))) { return res.status(400).json({ error: 'Dato inválido' }); }
+        if (isNaN(id_perfil)) { return res.status(404).render('error', { error: new Error('Dato inválido') }); }
 
         const perfil = await Usuario.findByPk(id_perfil, { include: [{ association: 'Seguidores' }, { association: 'Seguidos' }] });
         if (!perfil) return res.status(404).render('error', { error: new Error('Usuario no encontrado') });
 
         const misPublicaciones = await Publicacion.findAll({ where: { id_usuario: id_perfil } });
-        const idsPublicaciones = misPublicaciones.map(p => p.id);
-        const publicaciones = await obtenerDatosCompletosPublicacion(idsPublicaciones);
+        const publicaciones = await obtenerDatosCompletosPublicacion(misPublicaciones.map(p => p.id));
 
         let loSigo = false;
         let publicaciones_Seguidos = [];
@@ -77,13 +89,11 @@ async function perfil(req, res, next) {
 
             if (idsSeguidos.length > 0) {
                 const pubs_Seguidos = await Publicacion.findAll({ where: { id_usuario: { [Op.in]: idsSeguidos } } });
-                const idsPublicaciones = pubs_Seguidos.map(p => p.id);
-                publicaciones_Seguidos = await obtenerDatosCompletosPublicacion(idsPublicaciones);
+                publicaciones_Seguidos = await obtenerDatosCompletosPublicacion(pubs_Seguidos.map(p => p.id));
             }
             if (id_registrado) {
                 const misFavoritos = await Favorito.findAll({ where: { id_usuario: id_registrado } });
-                const idsFavoritos = misFavoritos.map(f => f.id_publicacion);
-                favoritos = await obtenerDatosCompletosPublicacion(idsFavoritos);
+                favoritos = await obtenerDatosCompletosPublicacion(misFavoritos.map(f => f.id_publicacion));
     
                 const listas = await Favorito.findAll({ where: { id_usuario: id_registrado }, attributes: ['nombre'], group: ['nombre'] });
                 nombreListas = listas.map(l => l.nombre);
@@ -167,6 +177,7 @@ module.exports = {
     registrar,
     ingresar,
     modificar,
+    filtrarListaFavoritos,
     perfil,
     seguidores,
     seguidos,

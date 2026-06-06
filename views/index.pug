@@ -142,7 +142,98 @@ block content
       } catch (error) { console.error('Error al modificar:', error); }
     }
 
-    // MOSTRAR / OCULTAR COMENTARIOS (Corregido leyendo del caché)
+    async function cerrarAbrirComentarios(id, abierto) {
+      try {
+          const boton = document.getElementById(`cerrarAbrir-comentarios-img-${id}`);
+
+          const res = await fetch('/comentario/alternar', {
+              method: 'POST',
+              headers: { 'Content-type': 'application/json' },
+              body: JSON.stringify({ id_imagen: id, comentarios: abierto })
+          });
+
+          const data = await res.json();
+          boton.onclick = () => cerrarAbrirComentarios(id, data.ok);
+          boton.innerText = data.ok ? '🟢' : '🔴';
+      } catch (error) { console.error('Error al abrir/cerrar los comentarios', error); }
+    }
+
+    function alternarFormModificarEtiqueta(id) {
+      const form = document.getElementById(`formEtiqueta-${id}`);
+      form.style.display === 'none' ? form.style.display = 'block' : form.style.display = 'none';
+    }
+
+    async function modificarPublicacion(evento, id) {
+      try {
+        evento.preventDefault();
+        const formulario = evento.target;
+        const formData = new FormData(formulario);
+
+        const datos = {
+          id: id,
+          titulo: formData.get('nuevoTitulo'),
+          descripcion: formData.get('nuevaDescripcion'),
+          etiquetas: formData.getAll('nuevaEtiqueta[]'),
+          idsEtiquetas: formData.getAll('nuevaEtiquetaId[]')
+        };
+
+        const res = await fetch('/publicacion/modificar', {
+          method: 'PUT',
+          headers: { 'Content-type' : 'application/json' },
+          body: JSON.stringify(datos)
+        });
+
+        const data = await res.json(); console.log(data);
+        if (data) {
+          formulario.querySelector('input[name="nuevoTitulo"]').value = data.titulo;
+          formulario.querySelector('textarea[name="nuevaDescripcion"]').value = data.descripcion;
+
+          const inputsEtiquetas = formulario.querySelectorAll('input[name="nuevaEtiqueta[]"]');
+          data.etiquetas.forEach((nuevaEtiqueta, index) => {
+            if (inputsEtiquetas[index]) inputsEtiquetas[index].value = nuevaEtiqueta;
+          });
+        }
+      } catch(error) { console.error(error); }
+    }
+
+    function nuevaEtiqueta() {
+      const seccion_etiquetas = document.getElementById('seccion-etiquetas');
+      const cantidad_actual = seccion_etiquetas.querySelectorAll("#etiqueta").length;
+      const contenedor = document.createElement('div');
+
+      if (cantidad_actual > 4) return alert('Solo podés añadir hasta 5 etiquetas');
+
+      contenedor.id = "etiqueta";
+      contenedor.style.display = "inline-block";
+
+      contenedor.innerHTML = `
+        <input type="text" name="nuevaEtiqueta[]" required>
+        <input type="hidden" name="nuevaEtiquetaId[]" required>
+        <button type="button" onclick="eliminarEtiqueta(this, null)">🗑️</button>
+      `;
+
+      seccion_etiquetas.appendChild(contenedor);
+    }
+
+    async function eliminarEtiqueta(boton, id) {
+      try {
+        if (!id) return boton.parentElement.remove();
+
+        const res = await fetch('/publicacion/eliminarEtiqueta', {
+          method: 'DELETE',
+          headers: { 'Content-type' : 'application/json' },
+          body: JSON.stringify({ id })
+        });
+
+        const data = await res.json();
+        if (data.ok) {
+          const seccion_etiqueta = document.getElementById(`seccion-etiqueta-${id}`);
+          seccion_etiqueta.remove();
+        }
+      } catch(error) { console.error(error); }
+    }
+
+    // MOSTRAR / OCULTAR COMENTARIOS
     function alternarComentarios(id) {
       const seccion_comentarios = document.getElementById(`seccion-comentarios-${id}`);
       const contenedor_comentarios = document.getElementById(`lista-comentarios-pub-${id}`);
@@ -161,7 +252,7 @@ block content
           const id_comentario = comentario.id;
           const fecha_creacion = new Date(comentario.createdAt).toLocaleString();
           const texto = comentario.texto;
-          const denuncias = comentario.denuncias || 0;
+          const denuncias = comentario.Notificacions?.length || 0;
 
           let htmlComentario = '';
           if (id_usuario && esMio) {

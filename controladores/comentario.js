@@ -1,4 +1,4 @@
-const { Comentario, Notificacion, Usuario } = require('../models');
+const { Comentario, Notificacion, Usuario, Imagen } = require('../models');
 
 async function crear(req, res, next) {
     try {
@@ -44,6 +44,16 @@ async function denunciar(req, res, next) {
     } catch (error) { next(error); }
 }
 
+async function alternar(req, res, next) {
+    try {
+        const { id_imagen, comentarios } = req.body;
+
+        if (isNaN(Number(id_imagen)) || typeof comentarios !== 'boolean') return res.status(400).render('error', { error: new Error('Datos inválidos') });
+        await Imagen.update({ comentarios: comentarios === true ? false : true }, { where: { id: id_imagen } });
+        res.json({ ok: comentarios === true ? false : true });
+    } catch (error) { next(error); }
+}
+
 async function eliminar(req, res, next) {
     try {
         const id = req.body.id;
@@ -55,9 +65,4 @@ async function eliminar(req, res, next) {
     } catch (error) { next(error); }
 }
 
-module.exports = {
-    crear,
-    modificar,
-    denunciar,
-    eliminar
-}
+module.exports = { crear, modificar, denunciar, alternar, eliminar }

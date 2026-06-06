@@ -4,21 +4,29 @@ const { Op } = require('sequelize');
 
 async function contenidoPaginaPrincipal(req, res, next) {
     try {
-        const usuario = await Usuario.findByPk(req.session.userId) || null;
+        const usuario = await Usuario.findByPk(req.session.userId, { attributes: ['id', 'nombre', 'foto_perfil'] }) || null;
         const tieneDenuncias = await controlDeDenuncias(usuario);
 
         const idsCargados = req.body && req.body.idsCargados ? req.body.idsCargados : [];
+        const publicacionesDisponibles = await Publicacion.findAll({ where: { id: { [Op.notIn]: idsCargados } }, attributes: ['id'], order: sequelize.random(), limit: 3, raw: true });
+
+        if (publicacionesDisponibles.length === 0) {
+            if (req.method === 'POST') return res.status(200).json({ html: '', publicaciones: [], finalizar: true });
+            return res.render('index', { publicaciones: [], usuario, tieneDenuncias });
+        }
+
+        const idsPublicaciones = publicacionesDisponibles.map(p => p.id);
         const publicaciones = await Publicacion.findAll({
-            where: { id: { [Op.notIn]: idsCargados } },
-            order: sequelize.random(), limit: 10,
+            where: { id: { [Op.in]: idsPublicaciones } },
             include: [
-                { model: Etiqueta }, { model: Usuario, attributes: ['id', 'nombre', 'foto_perfil'] },
-                { model: Imagen, 
-                    include: [
-                        { model: Valoracion }, 
-                        { model: Comentario, include: [{ model: Usuario, attributes: ['id', 'nombre', 'foto_perfil'] }]}
-                    ]
-                }
+                { model: Etiqueta, attributes: ['id', 'nombre'] }, { model: Usuario, attributes: ['id', 'nombre', 'foto_perfil'] },
+                { model: Imagen, include: [
+                    { model: Valoracion, attributes: ['id', 'valoracion'] },
+                    { model: Comentario, include: [
+                        { model: Usuario, attributes: ['id', 'nombre', 'foto_perfil'] },
+                        { model: Notificacion, attributes: ['id'], where: { tipo_evento: 'Denuncia' }, required: false }
+                    ]}
+                ]}
             ]
         });
 
@@ -36,8 +44,6 @@ async function contenidoPaginaPrincipal(req, res, next) {
         });
         
         if (req.method === 'POST') {
-            if (datos.length === 0) return res.status(200).json({ html: '', publicaciones: [], finalizar: true });
-
             let htmlAcumulado = '';
             for (const pub of datos) {
                 await new Promise((resolve, reject) => {
@@ -60,29 +66,46 @@ async function controlDeDenuncias(usuario) {
     try {
         if (!usuario) return false;
         
-        const publicaciones = await Publicacion.findAll({ where: { id_usuario: usuario.id } });
-        const imagenes = await Imagen.findAll({ where: { id_publicacion: { [Op.in]: publicaciones.map(p => p.id) } } });
-        const comentarios = await Comentario.findAll({ where: { id_usuario: usuario.id } });
-        const denunciasImgs = await Notificacion.findAll({ where: { tipo_evento: 'Denuncia', id_imagen: { [Op.in]: imagenes.map(i => i.id) }, notificada: false } });
-        const denunciasComs = await Notificacion.findAll({ where: { tipo_evento: 'Denuncia', id_comentario: { [Op.in]: comentarios.map(c => c.id) }, notificada: false } });
+        const [comentarios, publicaciones] = await Promise.all([
+            Comentario.findAll({ where: { id_usuario: usuario.id }, attributes: ['id'], raw: true }),
+            Publicacion.findAll({ where: { id_usuario: usuario.id }, attributes: ['id'], raw: true })
+        ]);
 
-        for (const d of denunciasImgs) { await d.update({ notificada: true }); }
-        for (const d of denunciasComs) { await d.update({ notificada: true }); }
+        const idsPublicaciones = publicaciones.map(p => p.id);
+        const idsComentarios = comentarios.map(c => c.id);
 
-        const cantImagenes = imagenes.filter(i => denunciasImgs.id_imagen === i.id && denunciasImgs.id_imagen >= 3);
-        for (const imagen of cantImagenes) {
-            const publicacion = await Publicacion.findByPk(imagen.id_publicacion);
-            await Validador.create({ id_publicacion: publicacion.id });
+        const imagenes = idsPublicaciones.length > 0
+            ? await Imagen.findAll({ where: { id_publicacion: { [Op.in]: idsPublicaciones } }, attributes: ['id', 'id_publicacion'], raw: true })
+            : [];
+
+        const idsImagenes = imagenes.map(i => i.id);
+
+        const [denunciasComs, denunciasImgs] = await Promise.all([
+            idsComentarios.length > 0 ? Notificacion.findAll({ where: { tipo_evento: 'Denuncia', id_comentario: { [Op.in]: idsComentarios }, vista: false } }) : [],
+            idsImagenes.length > 0 ? Notificacion.findAndCountAll({
+                where: { tipo_evento: 'Denuncia', id_imagen: { [Op.in]: idsImagenes }, vista: false },
+                attributes: ['id_imagen', [sequelize.fn('COUNT', sequelize.col('id_imagen')), 'count']],
+                group: ['id_imagen'],
+                raw: true
+            }) : []
+        ]);
+
+        const cantImagenes = imagenes.filter(i => denunciasImgs.rows.find(d => d.id_imagen) === i.id && denunciasImgs.count >= 3);
+        if (cantImagenes.length > 0) {
+            const idsPubsCriticas = [...new Set(cantImagenes.map(i => i.id_publicacion))];
+            
+            for (const pubId of idsPubsCriticas) {
+                const existe = await Validador.findOne({ where: { id_publicacion: pubId }, raw: true });
+                if (!existe) { await Validador.create({ id_publicacion: pubId }); }
+                else { await Publicacion.update({ modificable: false }, { where: { id: pubId } }); }
+                
+                const bajadas = await Validador.count({ where: { id_publicacion: pubId } });
+                if (bajadas >= 3) await usuario.update({ registrado: false });
+            }
         }
 
-        return denunciasImgs.length > 0 || denunciasComs.length > 0;
+        return denunciasImgs.rows.length > 0 || denunciasComs.length > 0;
     } catch (error) { console.error(error); }
-}
-
-async function controlDeContenido(req, res, next) {
-    try {
-        
-    } catch (error) { next(error); }
 }
 
 async function buscar(req, res, next) {
@@ -95,4 +118,4 @@ async function buscar(req, res, next) {
     } catch (error) { next(); }
 }
 
-module.exports = { contenidoPaginaPrincipal, controlDeContenido, buscar };
+module.exports = { contenidoPaginaPrincipal, buscar };
