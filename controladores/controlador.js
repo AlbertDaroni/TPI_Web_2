@@ -74,37 +74,56 @@ async function controlDeDenuncias(usuario) {
         const idsPublicaciones = publicaciones.map(p => p.id);
         const idsComentarios = comentarios.map(c => c.id);
 
+        if (idsPublicaciones.length === 0 && idsComentarios.length === 0) return false;
         const imagenes = idsPublicaciones.length > 0
-            ? await Imagen.findAll({ where: { id_publicacion: { [Op.in]: idsPublicaciones } }, attributes: ['id', 'id_publicacion'], raw: true })
-            : [];
-
+        ? await Imagen.findAll({ where: { id_publicacion: { [Op.in]: idsPublicaciones } }, attributes: ['id', 'id_publicacion'], raw: true })
+        : [];
+        
         const idsImagenes = imagenes.map(i => i.id);
-
+        
         const [denunciasComs, denunciasImgs] = await Promise.all([
-            idsComentarios.length > 0 ? Notificacion.findAll({ where: { tipo_evento: 'Denuncia', id_comentario: { [Op.in]: idsComentarios }, vista: false } }) : [],
-            idsImagenes.length > 0 ? Notificacion.findAndCountAll({
+            idsComentarios.length > 0 ? Notificacion.findAll({
+                where: { tipo_evento: 'Denuncia', id_comentario: { [Op.in]: idsComentarios }, vista: false },
+                attributes: ['id'],
+                raw: true
+            }) : [],
+            idsImagenes.length > 0 ? Notificacion.findAll({
                 where: { tipo_evento: 'Denuncia', id_imagen: { [Op.in]: idsImagenes }, vista: false },
-                attributes: ['id_imagen', [sequelize.fn('COUNT', sequelize.col('id_imagen')), 'count']],
-                group: ['id_imagen'],
+                attributes: ['id_imagen', 'id_causante'],
                 raw: true
             }) : []
         ]);
+        
+        if (denunciasComs.length === 0 && denunciasImgs.length === 0) return false;
+        
+        const mapaDenunciasUnicas = new Map();
+        denunciasImgs.forEach(d => {
+            const id_imagen = d.id_imagen;
+            const id_causante = d.id_causante;
 
-        const cantImagenes = imagenes.filter(i => denunciasImgs.rows.find(d => d.id_imagen) === i.id && denunciasImgs.count >= 3);
+            if (!mapaDenunciasUnicas.has(id_imagen)) mapaDenunciasUnicas.set(id_imagen, new Set());
+            mapaDenunciasUnicas.get(id_imagen).add(id_causante);
+        });
+
+        const idsImagenesCriticas = [];
+        for (const [id_imagen, usuarios] of mapaDenunciasUnicas.entries()) {
+            if (usuarios.size >= 3) idsImagenesCriticas.push(id_imagen);
+        }
+
+        const cantImagenes = imagenes.filter(i => idsImagenesCriticas.includes(i.id));
         if (cantImagenes.length > 0) {
             const idsPubsCriticas = [...new Set(cantImagenes.map(i => i.id_publicacion))];
-            
             for (const pubId of idsPubsCriticas) {
-                const existe = await Validador.findOne({ where: { id_publicacion: pubId }, raw: true });
+                const existe = await Validador.findOne({ where: { id_publicacion: pubId }, attributes: ['id'], raw: true });
                 if (!existe) { await Validador.create({ id_publicacion: pubId }); }
                 else { await Publicacion.update({ modificable: false }, { where: { id: pubId } }); }
-                
-                const bajadas = await Validador.count({ where: { id_publicacion: pubId } });
-                if (bajadas >= 3) await usuario.update({ registrado: false });
+
+                const totalPubsBajadas = await Validador.count({ where: { id_publicacion: { [Op.in]: idsPublicaciones } } });
+                if (totalPubsBajadas >= 3) await usuario.update({ registrado: false });
             }
         }
 
-        return denunciasImgs.rows.length > 0 || denunciasComs.length > 0;
+        return denunciasImgs.length > 0 || denunciasComs.length > 0;
     } catch (error) { console.error(error); }
 }
 

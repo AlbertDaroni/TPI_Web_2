@@ -1,4 +1,4 @@
-const { Comentario, Notificacion, Usuario, Imagen } = require('../models');
+const { Comentario, Notificacion, Usuario } = require('../models');
 
 async function crear(req, res, next) {
     try {
@@ -31,26 +31,21 @@ async function denunciar(req, res, next) {
     try {
         if (req.method === 'GET') return res.render('denuncia', { tipo: "comentario", id_comentario: req.params.id });
 
-        const id_dueno = req.session.userId;
-        const motivo = req.body.motivo;
-        const id_comentario = req.body.id_comentario;
+        const id_dueño = req.session.userId;
+        const { motivo, id_comentario, opcion } = req.body;
     
-        if (!motivo || isNaN(Number(id_comentario))) return res.status(400).render('error', { error: new Error('Datos inválidos') });
+        if (!motivo || !opcion || isNaN(Number(id_comentario))) return res.status(400).render('error', { error: new Error('Datos inválidos') });
 
         const comentario = await Comentario.findByPk(id_comentario);
-        await Notificacion.create({ tipo_evento: 'Denuncia', motivo: motivo, id_causante: id_dueno, id_dueno: comentario.id_usuario, id_comentario: id_comentario });
+        await Notificacion.create({
+            tipo_evento: 'Denuncia',
+            motivo: opcion + ':' + motivo,
+            id_causante: id_dueño,
+            id_dueno: comentario.id_usuario,
+            id_comentario: id_comentario
+        });
 
-        res.json({ ok: true });
-    } catch (error) { next(error); }
-}
-
-async function alternar(req, res, next) {
-    try {
-        const { id_imagen, comentarios } = req.body;
-
-        if (isNaN(Number(id_imagen)) || typeof comentarios !== 'boolean') return res.status(400).render('error', { error: new Error('Datos inválidos') });
-        await Imagen.update({ comentarios: comentarios === true ? false : true }, { where: { id: id_imagen } });
-        res.json({ ok: comentarios === true ? false : true });
+        res.redirect('/');
     } catch (error) { next(error); }
 }
 
@@ -65,4 +60,4 @@ async function eliminar(req, res, next) {
     } catch (error) { next(error); }
 }
 
-module.exports = { crear, modificar, denunciar, alternar, eliminar }
+module.exports = { crear, modificar, denunciar, eliminar }

@@ -13,6 +13,7 @@ router.post('/filtrar', notificacion.filtrar);
 
 /* Eliminar */
 router.get('/eliminar', notificacion.eliminar);
+router.delete('/eliminar', notificacion.eliminar);
 
 /* Actualizar visto */
 router.put('/actualizarVisto', notificacion.actualizarVisto);

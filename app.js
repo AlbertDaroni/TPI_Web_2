@@ -1,3 +1,4 @@
+require('dotenv').config();
 const path = require('path');
 const logger = require('morgan');
 const express = require('express');
@@ -6,15 +7,15 @@ const createError = require('http-errors');
 const cookieParser = require('cookie-parser');
 
 const indexRouter = require('./routes/index');
+const imagenRouter = require('./routes/imagen');
 const mensajesRouter = require('./routes/mensaje');
 const usuariosRouter = require('./routes/usuario');
+const etiquetaRouter = require('./routes/etiqueta');
 const comentariosRouter = require('./routes/comentario');
 const publicacionesRouter = require('./routes/publicacion');
 const notificacionesRouter = require('./routes/notificacion');
 
-const sequelize = require('./config/db');
 const { Imagen, Mensaje, Usuario, Etiqueta, Favorito, Validador, Comentario, Valoracion, Publicacion, Notificacion } = require('./models');
-const popular = require('./popular');
 
 const app = express();
 
@@ -28,7 +29,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(sesion({
-  secret: 'mi-clave-secreta-de-usuario',
+  secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: true,
   cookie: {
@@ -43,8 +44,10 @@ app.use((req, res, next) => {
     next();
 });
 
+app.use('/imagen', imagenRouter);
 app.use('/mensaje', mensajesRouter);
 app.use('/usuario', usuariosRouter);
+app.use('/etiqueta', etiquetaRouter);
 app.use('/comentario', comentariosRouter);
 app.use('/publicacion', publicacionesRouter);
 app.use('/notificacion', notificacionesRouter)
@@ -60,14 +63,6 @@ app.use((err, req, res, next) => {
   res.status(err.status || 500).render('error', { message: err.message });
 });
 
-sequelize.sync({ alter: true, force: false })
-  .then(async () => {
-    console.log('Modelos sincronizados con la base de datos');
-    // try { await popular.popular(); } catch (error) { console.log(error); }
-
-    const puerto = 3000;
-    app.listen(puerto, () => console.log(`Servidor corriendo en http://localhost:${puerto}`));
-  })
-  .catch(error => console.error('Error al sincronizarse con la base de datos:', error));
+app.listen(process.env.PORT, () => { console.log('Servidor corriendo'); });
 
 module.exports = app;

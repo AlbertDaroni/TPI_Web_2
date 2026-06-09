@@ -15,9 +15,6 @@ router.put('/modificar', comentario.modificar);
 router.get('/denunciar/:id', comentario.denunciar);
 router.post('/denunciar', comentario.denunciar);
 
-/* Alternar */
-router.post('/alternar', comentario.alternar);
-
 /* Eliminar */
 router.delete('/eliminar', comentario.eliminar);
 

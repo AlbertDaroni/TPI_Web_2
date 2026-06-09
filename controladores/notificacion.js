@@ -54,6 +54,8 @@ async function actualizarVisto(req, res, next) {
 
 async function eliminar(req, res, next) {
     try {
+        const { id } = req.body;
+        if (id) await Notificacion.destroy({ where: { id: id } });
         await Notificacion.destroy({ where: { id_dueno: req.session.userId } });
         res.redirect('/notificacion');
     } catch(error) { next(error); }

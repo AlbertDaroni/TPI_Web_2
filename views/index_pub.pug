@@ -10,13 +10,13 @@ div.contenedor-post(data-id=pub.id)
         div(id=`imagen-container-${pub.id}`, onclick=`location.href="/publicacion/ver/${pub.id}"`)
           if (usuario)
             img.main-img(src=imagenActiva.imagen, style="width: 100%")
-            p= (imagenActiva.licencia) ? 'Imagen sin licencia' : 'Imagen con licencia'
+            p(id=`licencia-text-${pub.id}`)= (imagenActiva.licencia) ? 'Imagen sin licencia' : 'Imagen con licencia'
           else if (imagenActiva.licencia)
             img.main-img(src="/images/imagen_censurada.png", style="width: 100%")
-            p Imagen con licencia
+            p(id=`licencia-text-${pub.id}`) Imagen con licencia
           else 
             img.main-img(src=imagenActiva.imagen, style="width: 100%")
-            p Imagen sin licencia
+            p(id=`licencia-text-${pub.id}`) Imagen sin licencia
         
         if (pub.Imagens.length > 1)
           button(onclick=`mover(${pub.id}, -1)`) ◀️
@@ -51,23 +51,24 @@ div.contenedor-post(data-id=pub.id)
       div#acciones
         if (usuario && pub.id_usuario !== usuario.id)
           - var valorizo = imagenActiva.Valoracions && imagenActiva.Valoracions.some(v => v.id_usuario === usuario.id)
+          - var valoracion = imagenActiva.Valoracions && imagenActiva.Valoracions.find(v => v.id_usuario === usuario.id)
           if (!valorizo)
             div(id=`contenedor-valoraciones-pub-${pub.id}`)
               div(id=`contenedor-voto-pub-${pub.id}`, style="display: inline-block;")
-                button(onclick=`actualizarLikes(${imagenActiva.id}, ${true}, ${pub.id})`, class="boton-like") ❤️
-                button(onclick=`actualizarLikes(${imagenActiva.id}, ${false}, ${pub.id})`, class="boton-like") 🩶
+                button(onclick=`actualizarLikes(${imagenActiva.id}, ${true}, ${pub.id})`, class="boton-like", title="Me gusta") ❤️
+                button(onclick=`actualizarLikes(${imagenActiva.id}, ${false}, ${pub.id})`, class="boton-like", title="No me gusta") 🩶
               span(id=`valoracion-pub-${pub.id}`)= imagenActiva.promedio + '%'
               span(id=`cantidad-valoraciones-pub-${pub.id}`)= imagenActiva.cantidad
           else 
             div(id=`contenedor-valoraciones-pub-${pub.id}`)
-              button(type="button", class="boton-like") ❤️
+              button(type="button", class="boton-like")= valoracion.valoracion ? '❤️' : '🩶'
                 span(id=`valoracion-pub-${pub.id}`)= imagenActiva.promedio + '%'
                 span(id=`cantidad-valoraciones-pub-${pub.id}`)= imagenActiva.cantidad
-          button(onclick=`alternarComentarios(${pub.id})`) 💬
+          button(onclick=`alternarComentarios(${pub.id})`, title="Comentarios") 💬
             span(id=`comentarios-pub-${pub.id}`)= imagenActiva.Comentarios.length
-          button(onclick=`guardarPublicacion(${pub.id})`) 📁
-          button(onclick=`marcarInteres(${pub.id})`) ⭐
-          a(href=`/publicacion/${imagenActiva.id}/denunciar`) 🚩
+          button(onclick=`guardarPublicacion(${pub.id})`, title="Guardar como favorito") 📁
+          button(onclick=`marcarInteres(${pub.id})`, title="Me interesa") ⭐
+          a(href=`/imagen/denunciar/${imagenActiva.id}`, title="Denunciar") 🚩
         else
           div(id=`contenedor-valoraciones-pub-${pub.id}`)
             button(type="button", class="boton-like") ❤️
@@ -80,7 +81,7 @@ div.contenedor-post(data-id=pub.id)
               - var color = imagenActiva.comentarios ? '🟢' : '🔴'
               button(onclick=`cerrarAbrirComentarios(${imagenActiva.id}, ${imagenActiva.comentarios})`, id=`cerrarAbrir-comentarios-img-${imagenActiva.id}`) #{color}
           if (usuario && pub.id_usuario === usuario.id && pub.modificable)
-            a(href=`/publicacion/imagen/eliminar/${imagenActiva.id}`) Eliminar imagen
+            a(href=`/imagen/eliminar/${imagenActiva.id}`) Eliminar imagen
             a(href=`/publicacion/eliminar/${pub.id}`) Eliminar publicación
       
       div(id=`guardarPublicacion-${pub.id}`, style="display: none;")

@@ -79,6 +79,7 @@ block content
                         button(type="button", id=`boton-visto-${n.id}`, class="btn-visto") ✔️
                     else 
                         button(onclick=`actualizarVisto(${n.id})`, id=`boton-visto-${n.id}`, class="btn-visto") ✖️
+                    button(onclick=`eliminar(${n.id})`, id=`boton-eliminar-${n.id}`, class="btn-visto") 🗑️
         else 
             p No hay notificaciones
 
@@ -115,5 +116,18 @@ block content
                     (data.vista) ? boton_visto.innerText = "✔️" : boton_visto.innerText = "✖️";
                     if (data.vista) boton_visto.removeAttribute('onclick');
                 }
+            } catch (error) { console.error("Error:", error); }
+        }
+
+        async function eliminar(id) {
+            try {
+                const boton_eliminar = document.getElementById(`boton-eliminar-${id}`);
+                const res = await fetch(`/notificacion/eliminar`, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id })
+                });
+                
+                boton_eliminar.remove();
             } catch (error) { console.error("Error:", error); }
         }

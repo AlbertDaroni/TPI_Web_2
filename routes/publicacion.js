@@ -15,18 +15,8 @@ router.get('/etiqueta/:nombre', publicacion.buscarPorEtiqueta);
 /* Ver */
 router.get('/ver/:id', publicacion.ver);
 
-/* Denunciar */
-router.get('/:id/denunciar', publicacion.denunciar);
-router.post('/denunciar', publicacion.denunciar);
-
 /* Modificar */
 router.put('/modificar', publicacion.modificar);
-
-/* Eliminar etiqueta */
-router.delete('/eliminarEtiqueta', publicacion.eliminarEtiqueta);
-
-/* Eliminar imagen */
-router.get('/imagen/eliminar/:id', publicacion.eliminarImagen);
 
 /* Eliminar publicación */
 router.post('/eliminar/:id', publicacion.eliminar);
@@ -36,8 +26,5 @@ router.post('/:id/marcarInteres', publicacion.marcarInteres);
 
 /* Guardar */
 router.post('/:id/guardar', publicacion.guardar);
-
-/* Actualizar valoración */
-router.put('/:id/valoracion', publicacion.actualizarValoracion);
 
 module.exports = router;

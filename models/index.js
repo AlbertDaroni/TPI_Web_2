@@ -3,6 +3,7 @@ const Usuario = require('./Usuario');
 const Mensaje = require('./Mensaje');
 const Etiqueta = require('./Etiqueta');
 const Favorito = require('./Favorito');
+const Seguidor = require('./Seguidor');
 const Validador = require('./Validador');
 const Comentario = require('./Comentario');
 const Valoracion = require('./Valoracion');
@@ -23,10 +24,8 @@ Etiqueta.belongsTo(Publicacion, { foreignKey: 'id_publicacion' });
 // Favorito
 Usuario.hasMany(Favorito, { foreignKey: 'id_usuario' });
 Publicacion.hasMany(Favorito, { foreignKey: 'id_publicacion' });
-Imagen.hasMany(Favorito, { foreignKey: 'id_imagen' });
 Favorito.belongsTo(Usuario, { foreignKey: 'id_usuario' });
 Favorito.belongsTo(Publicacion, { foreignKey: 'id_publicacion' });
-Favorito.belongsTo(Imagen, { foreignKey: 'id_imagen' });
 
 // Imagen
 Publicacion.hasMany(Imagen, { foreignKey: 'id_publicacion', onDelete: 'CASCADE' });
@@ -61,14 +60,15 @@ Valoracion.belongsTo(Usuario, { foreignKey: 'id_usuario' });
 // Seguidores
 Usuario.belongsToMany(Usuario, { 
     as: 'Seguidores', 
-    through: 'seguidores', 
+    through: Seguidor, 
     foreignKey: 'id_seguido', 
     otherKey: 'id_seguidor' 
 });
 
+// Seguidos
 Usuario.belongsToMany(Usuario, { 
     as: 'Seguidos', 
-    through: 'seguidores', 
+    through: Seguidor, 
     foreignKey: 'id_seguidor', 
     otherKey: 'id_seguido' 
 });
@@ -83,6 +83,7 @@ module.exports = {
     Usuario,
     Etiqueta,
     Favorito,
+    Seguidor,
     Validador,
     Comentario,
     Valoracion,

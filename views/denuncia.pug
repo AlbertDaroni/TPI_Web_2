@@ -7,18 +7,20 @@ block content
     div#contenido
         h3 Reportar un problema
         p Por favor, describí el motivo de tu denuncia.
-        
-        if (tipo === "imagen")
-            form(action=`/publicacion/denunciar`, method="post") 
-                label(for="descripcion") Motivo de la denuncia
-                textarea(name="motivo", required) 
-                input(type="hidden", name="id_imagen", value=id_imagen)
-                button(type="submit") Enviar reporte
-        else if (tipo === "comentario")
-            form(action=`/comentario/denunciar`, method="post") 
-                label(for="descripcion") Motivo de la denuncia
-                textarea(name="motivo", required) 
-                input(type="hidden", name="id_comentario", value=id_comentario)
-                button(type="submit") Enviar reporte
-        else
-            p No se ha encontrado el objeto a denunciar
+
+        - var accion = tipo === "imagen" ? "/imagen/denunciar" : "/comentario/denunciar"
+        - var valor  = tipo === "imagen" ? id_imagen : id_comentario
+        - var nombre = tipo === "imagen" ? "id_imagen" : "id_comentario"
+
+        form(action=accion, method="post") 
+            select(name="opcion")
+                option(value="Abuso") Abuso
+                option(value="Maltrato") Maltrato
+                option(value="Robo de identidad") Robo de identidad 
+                option(value="Violencia") Violencia 
+                option(value="Doxeo") Doxeo 
+
+            label(for="descripcion") Motivo de la denuncia
+            textarea(name="motivo", required) 
+            input(type="hidden", name=nombre , value=valor)
+            button(type="submit") Enviar reporte
