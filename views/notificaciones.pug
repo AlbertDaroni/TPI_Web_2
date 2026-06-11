@@ -24,7 +24,7 @@ block content
 
         if (notificaciones && notificaciones.length > 0)
             each n in notificaciones 
-                div.notificacion-item(class=(n.vista ? "" : "no-leida"))
+                div.notificacion-item(id=`notificacion-${n.id}`, class=(n.vista ? "" : "no-leida"))
                     img(src=n.Causante.foto_perfil, onclick=`location.href='/usuario/${n.id_causante}/perfil'`)
 
                     - var urlPub = ''
@@ -76,10 +76,10 @@ block content
                         small= new Date(n.createdAt).toLocaleDateString()
 
                     if (n.vista)
-                        button(type="button", id=`boton-visto-${n.id}`, class="btn-visto") ✔️
+                        button(type="button", id=`boton-visto-${n.id}`, class="btn-visto", title="Leída") ✔️
                     else 
-                        button(onclick=`actualizarVisto(${n.id})`, id=`boton-visto-${n.id}`, class="btn-visto") ✖️
-                    button(onclick=`eliminar(${n.id})`, id=`boton-eliminar-${n.id}`, class="btn-visto") 🗑️
+                        button(onclick=`actualizarVisto(${n.id})`, id=`boton-visto-${n.id}`, class="btn-visto", title="No leída") ✖️
+                    button(onclick=`eliminar(${n.id})`, class="btn-visto", title="Eliminar") 🗑️
         else 
             p No hay notificaciones
 
@@ -121,13 +121,13 @@ block content
 
         async function eliminar(id) {
             try {
-                const boton_eliminar = document.getElementById(`boton-eliminar-${id}`);
-                const res = await fetch(`/notificacion/eliminar`, {
+                const notificacion = document.getElementById(`notificacion-${id}`);
+                const res = await fetch('/notificacion/eliminar', {
                     method: 'DELETE',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ id })
                 });
                 
-                boton_eliminar.remove();
+                notificacion.remove();
             } catch (error) { console.error("Error:", error); }
         }

@@ -10,10 +10,14 @@ div.contenedor-post(data-id=pub.id)
         div(id=`imagen-container-${pub.id}`, onclick=`location.href="/publicacion/ver/${pub.id}"`)
           if (usuario)
             img.main-img(src=imagenActiva.imagen, style="width: 100%")
-            p(id=`licencia-text-${pub.id}`)= (imagenActiva.licencia) ? 'Imagen sin licencia' : 'Imagen con licencia'
+            p(id=`licencia-text-${pub.id}`)= (imagenActiva.licencia) ? 'Imagen con licencia' : 'Imagen sin licencia'
+            if (imagenActiva.licencia && imagenActiva.marcaDeAgua)
+              span.marca-agua-texto(id=`marca-agua-${pub.id}`)= imagenActiva.marcaDeAgua
           else if (imagenActiva.licencia)
             img.main-img(src="/images/imagen_censurada.png", style="width: 100%")
             p(id=`licencia-text-${pub.id}`) Imagen con licencia
+            if (imagenActiva.licencia && imagenActiva.marcaDeAgua)
+              span.marca-agua-texto(id=`marca-agua-${pub.id}`)= imagenActiva.marcaDeAgua
           else 
             img.main-img(src=imagenActiva.imagen, style="width: 100%")
             p(id=`licencia-text-${pub.id}`) Imagen sin licencia
@@ -66,32 +70,27 @@ div.contenedor-post(data-id=pub.id)
                 span(id=`cantidad-valoraciones-pub-${pub.id}`)= imagenActiva.cantidad
           button(onclick=`alternarComentarios(${pub.id})`, title="Comentarios") 💬
             span(id=`comentarios-pub-${pub.id}`)= imagenActiva.Comentarios.length
-          button(onclick=`guardarPublicacion(${pub.id})`, title="Guardar como favorito") 📁
-          button(onclick=`marcarInteres(${pub.id})`, title="Me interesa") ⭐
-          a(href=`/imagen/denunciar/${imagenActiva.id}`, title="Denunciar") 🚩
+          button(onclick=`alternarFormGuardarPublicacion(${pub.id})`, title="Guardar como favorito") 📁
+          button(onclick=`marcarInteres(${pub.id}, ${pub.id_usuario})`, title="Me interesa") ⭐
+          a(href=`/imagen/denunciar/${imagenActiva.id}`, title="Denunciar", id=`link-denunciar-img-pub-${pub.id}`) 🚩
         else
           div(id=`contenedor-valoraciones-pub-${pub.id}`)
             button(type="button", class="boton-like") ❤️
               span(id=`valoracion-pub-${pub.id}`)= imagenActiva.promedio + '%'
               span(id=`cantidad-valoraciones-pub-${pub.id}`)= imagenActiva.cantidad
           div 
-            button(onclick=`alternarComentarios(${pub.id})`) 💬
+            button(onclick=`alternarComentarios(${pub.id})`, title="Comentarios") 💬
               span(id=`comentarios-pub-${pub.id}`)= imagenActiva.Comentarios.length
             if (usuario && pub.id_usuario === usuario.id && pub.modificable)
               - var color = imagenActiva.comentarios ? '🟢' : '🔴'
-              button(onclick=`cerrarAbrirComentarios(${imagenActiva.id}, ${imagenActiva.comentarios})`, id=`cerrarAbrir-comentarios-img-${imagenActiva.id}`) #{color}
+              button(onclick=`cerrarAbrirComentarios(${imagenActiva.id}, ${imagenActiva.comentarios})`, id=`btn-cerrarAbrir-comentarios-pub-${pub.id}`) #{color}
           if (usuario && pub.id_usuario === usuario.id && pub.modificable)
-            a(href=`/imagen/eliminar/${imagenActiva.id}`) Eliminar imagen
-            a(href=`/publicacion/eliminar/${pub.id}`) Eliminar publicación
-      
-      div(id=`guardarPublicacion-${pub.id}`, style="display: none;")
-        form(action=`/publicacion/${pub.id}/guardar`, method="post")
-          input(type="text", name="nombreLista", placeholder="Nombre de la lista", required) 
-          button(type="submit") 📩
+            button(onclick=`eliminarImagen(${imagenActiva.id})`, title="Eliminar imagen", id=`btn-eliminar-img-pub-${pub.id}`) ✂️
+            button(onclick=`eliminarPublicacion(${pub.id})`, title="Eliminar publicación") 🗑️
 
-      div(id=`motivo-interes-${pub.id}`, style="display: none;")
-        form(action=`/publicacion/${pub.id}/marcarInteres`, method="post") 
-          textarea(name="motivoInteres", cols="30", rows="5", placeholder="Escribí el motivo de tu interés", required)
+      div(id=`guardarPublicacion-${pub.id}`, style="display: none;")
+        form(onsubmit=`guardarPublicacion(event, ${pub.id})`, method="post")
+          input(id=`input-nombreLista-${pub.id}`, type="text", name="nombreLista", placeholder="Nombre de la lista", required) 
           button(type="submit") 📩
 
   div(id=`seccion-comentarios-${pub.id}`, style="display: none;")

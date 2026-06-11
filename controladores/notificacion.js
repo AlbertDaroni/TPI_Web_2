@@ -55,8 +55,10 @@ async function actualizarVisto(req, res, next) {
 async function eliminar(req, res, next) {
     try {
         const { id } = req.body;
-        if (id) await Notificacion.destroy({ where: { id: id } });
-        await Notificacion.destroy({ where: { id_dueno: req.session.userId } });
+        const whereClause = {};
+        
+        id ? whereClause.id = id : whereClause.id_dueno = req.session.userId;
+        await Notificacion.destroy({ where: whereClause });
         res.redirect('/notificacion');
     } catch(error) { next(error); }
 }

@@ -93,6 +93,23 @@
     z-index: 5;
 }
 
+/* Marca de agua */
+.marca-agua-texto {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-30deg);
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 3.5rem;
+    font-weight: 800;
+    letter-spacing: 5px;
+    text-transform: uppercase;
+    white-space: nowrap;
+    pointer-events: none;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6);
+    z-index: 4;
+}
+
 /* --- ACCIONES Y LIKES --- */
 #acciones {
     padding: 10px 16px;

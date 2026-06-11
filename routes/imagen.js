@@ -10,7 +10,7 @@ router.get('/denunciar/:id', imagen.denunciar);
 router.post('/denunciar', imagen.denunciar);
 
 /* Eliminar */
-router.get('/eliminar/:id', imagen.eliminar);
+router.delete('/eliminar', imagen.eliminar);
 
 /* Alternar comentarios */
 router.post('/alternar', imagen.alternarComentarios);

@@ -25,6 +25,7 @@ block content
 
     script.
         const usuario = !{JSON.stringify(usuario || null)};
+        const contactos = !{JSON.stringify(contactos || null)};
         let idSeguido;
 
         // Mostrar los mensajes de un contacto
@@ -82,17 +83,27 @@ block content
         async function buscarSeguido() {
             const lista_seguidos = document.getElementById('lista-seguidos');
             const nombre = document.getElementById('input-buscador').value;
-            const seguidos = Array.from(new Set(mensajes.filter(m => JSON.stringify(m.Receptor))));
 
             lista_seguidos.innerHTML = '';
-            seguidos.forEach(s => {
-                const html = `
-                    <div onclick="mostrarMensajes(${s.id})" style="cursor: pointer;">
-                        <img src="${s.foto_perfil}">
-                        <h3>${s.nombre}</h3>
-                    </div>
-                `;
-                lista_seguidos.insertAdjacentHTML('beforeend', html);
+            contactos.forEach(c => {
+                if (c.nombre === nombre) {
+                    const html = `
+                        <div onclick="mostrarMensajes(${c.id})" style="cursor: pointer;">
+                            <img src="${c.foto_perfil}">
+                            <h3>${c.nombre}</h3>
+                        </div>
+                    `;
+                    lista_seguidos.insertAdjacentHTML('beforeend', html);
+                }
+                if (nombre.trim() === '') {
+                    const html = `
+                        <div onclick="mostrarMensajes(${c.id})" style="cursor: pointer;">
+                            <img src="${c.foto_perfil}">
+                            <h3>${c.nombre}</h3>
+                        </div>
+                    `;
+                    lista_seguidos.insertAdjacentHTML('beforeend', html);
+                }
             });
         }
 

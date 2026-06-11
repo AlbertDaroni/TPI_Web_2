@@ -117,7 +117,7 @@ async function modificarComentario(evento, idPub, idComentario) {
 
 async function cerrarAbrirComentarios(id, abierto) {
     try {
-        const boton = document.getElementById(`cerrarAbrir-comentarios-img-${id}`);
+        const boton = document.getElementById('cerrarAbrir-comentarios-img');
 
         const res = await fetch('/imagen/alternar', {
             method: 'POST',
@@ -218,7 +218,6 @@ async function modificarPublicacion(evento, id) {
         });
 
         const data = await res.json();
-        console.log(data);
         if (data) {
             formulario.querySelector('input[name="nuevoTitulo"]').value = data.titulo;
             formulario.querySelector('textarea[name="nuevaDescripcion"]').value = data.descripcion;
@@ -228,6 +227,43 @@ async function modificarPublicacion(evento, id) {
                 if (inputsEtiquetas[index]) inputsEtiquetas[index].value = nuevaEtiqueta;
             });
         }
+    } catch (error) { console.error(error); }
+}
+
+async function eliminarPublicacion(id) {
+    try {
+        await fetch('/publicacion/eliminar', {
+            method: 'DELETE',
+            headers: { 'Content-type' : 'application/json' },
+            body: JSON.stringify({ id })
+        });
+    } catch (error) { console.error(error); }
+}
+
+async function guardarPublicacion(evento, id) {
+    try {
+        evento.preventDefault();
+        const formulario = evento.target;
+        const formData = new FormData(formulario);
+
+        const res = await fetch('/publicacion/guardar', {
+            method: 'POST',
+            headers: { 'Content-type': 'application/json' },
+            body: JSON.stringify({ id: id, nombre: formData.get('nombreLista') })
+        });
+
+        const data = await res.json();
+        if (data) document.getElementById(`input-nombreLista-${id}`).value = '✅';
+    } catch (error) { console.error(error); }
+}
+
+async function marcarInteres(id, usuario) {
+    try {
+        await fetch('/publicacion/marcarInteres', {
+            method: 'POST',
+            headers: { 'Content-type' : 'application/json' },
+            body: JSON.stringify({ id, usuario })
+        });
     } catch (error) { console.error(error); }
 }
 
@@ -269,6 +305,17 @@ async function eliminarEtiqueta(boton, id) {
     } catch (error) { console.error(error); }
 }
 
+// Manipulación de imágenes
+async function eliminarImagen(id) {
+    try {
+        await fetch('/imagen/eliminar', {
+            method: 'DELETE',
+            headers: { 'Content-type' : 'application/json' },
+            body: JSON.stringify({ id })
+        });
+    } catch (error) { console.error(error); }
+}
+
 // Mostrar siguiente/anterior imagen
 function mover(idPub, direccion) {
     const imagenes = cachePublicaciones[idPub] || [];
@@ -291,7 +338,7 @@ function mover(idPub, direccion) {
 
     if (id_usuario) {
         imagenElemento.src = nuevaImagen.imagen;
-        if (textoLicencia) textoLicencia.innerText = nuevaImagen.licencia ? 'Imagen sin licencia' : 'Imagen con licencia';
+        if (textoLicencia) textoLicencia.innerText = nuevaImagen.licencia ? 'Imagen con licencia' : 'Imagen sin licencia';
     } else if (nuevaImagen.licencia) {
         imagenElemento.src = "/images/imagen_censurada.png";
         if (textoLicencia) textoLicencia.innerText = 'Imagen con licencia';
@@ -300,11 +347,32 @@ function mover(idPub, direccion) {
         if (textoLicencia) textoLicencia.innerText = 'Imagen sin licencia';
     }
 
+    let elementoMarcaAgua = contenedor_imagen.querySelector('.marca-agua-texto');
+    const debeLlevarMarca = id_usuario && nuevaImagen.licencia && nuevaImagen.marcaDeAgua;
+
+    if (debeLlevarMarca) {
+        if (!elementoMarcaAgua) {
+            contenedor_imagen.insertAdjacentHTML('beforeend', `<span class="marca-agua-texto" id="marca-agua-${idPub}">${nuevaImagen.marcaDeAgua}</span>`);
+        } else { elementoMarcaAgua.innerText = nuevaImagen.marcaDeAgua; }
+    } else { if (elementoMarcaAgua) elementoMarcaAgua.remove(); }
+
+    const btnComentarios = document.getElementById(`btn-cerrarAbrir-comentarios-pub-${idPub}`);
+    if (btnComentarios) {
+        btnComentarios.innerText = nuevaImagen.comentarios ? '🟢' : '🔴';
+        btnComentarios.setAttribute('onclick', `cerrarAbrirComentarios(${nuevaImagen.id}, ${nuevaImagen.comentarios})`);
+    }
+
+    const btnEliminarImg = document.getElementById(`btn-eliminar-img-pub-${idPub}`);
+    if (btnEliminarImg) btnEliminarImg.setAttribute('onclick', `eliminarImagen(${nuevaImagen.id})`);
+
+    const linkDenunciar = document.getElementById(`link-denunciar-img-pub-${idPub}`);
+    if (linkDenunciar) linkDenunciar.setAttribute('href', `/imagen/denunciar/${nuevaImagen.id}`);
+
     const contenedorVoto = document.getElementById(`contenedor-voto-pub-${idPub}`);
     if (contenedorVoto && id_usuario) {
         const valorizo = nuevaImagen.Valoracions && nuevaImagen.Valoracions.some(v => v.id_usuario === id_usuario);
         const valoracion = nuevaImagen.Valoracions && nuevaImagen.Valoracions.find(v => v.id_usuario === id_usuario);
-        const emoji = valoracion ? '❤️' : '🩶';
+        const emoji = valoracion.valoracion ? '❤️' : '🩶';
 
         if (!valorizo) {
             contenedorVoto.innerHTML = `
@@ -324,6 +392,13 @@ function mover(idPub, direccion) {
     const inputImagen = document.getElementById(`input-imagen-comentario-${idPub}`);
     if (inputImagen) inputImagen.value = nuevaImagen.id;
 
+    const formularioComentarioBox = document.querySelector(`#seccion-comentarios-${idPub} .form-comentario`);
+    if (formularioComentarioBox) {
+        if (id_usuario && nuevaImagen.comentarios) {
+            formularioComentarioBox.style.display = 'block';
+        } else { formularioComentarioBox.style.display = 'none'; }
+    }
+
     const seccion_comentarios = document.getElementById(`seccion-comentarios-${idPub}`);
     if (seccion_comentarios && seccion_comentarios.style.display === 'block') {
         seccion_comentarios.style.display = 'none';
@@ -342,12 +417,12 @@ function alternarModificacionComentario(idCom) {
     seccion.style.display === 'none' ? seccion.style.display = 'block' : seccion.style.display = 'none';
 }
 
-function marcarInteres(idPub) {
+function alternarFormMarcarInteres(idPub) {
     const motivo_Interes = document.getElementById(`motivo-interes-${idPub}`);
     motivo_Interes.style.display === 'none' ? motivo_Interes.style.display = 'block' : motivo_Interes.style.display = 'none';
 }
 
-function guardarPublicacion(idPub) {
+function alternarFormGuardarPublicacion(idPub) {
     const seccion = document.getElementById(`guardarPublicacion-${idPub}`);
     seccion.style.display === 'none' ? seccion.style.display = 'block' : seccion.style.display = 'none';
 }

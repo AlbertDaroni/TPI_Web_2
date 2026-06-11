@@ -45,11 +45,11 @@ async function modificar(req, res, next) {
 
 async function eliminar(req, res, next) {
     try {
-        const id_publicacion = req.params.id;
         const id_usuario = req.session.userId;
+        const { id } = req.body;
 
-        if (isNaN(Number(id_publicacion))) return res.status(400).render('error', { error: new Error('Datos inválidos') });
-        await Publicacion.destroy({ where: { id: id_publicacion } });
+        if (isNaN(Number(id))) return res.status(400).render('error', { error: new Error('Datos inválidos') });
+        await Publicacion.destroy({ where: { id: id } });
 
         res.redirect(`/usuario/${id_usuario}/perfil`);
     } catch (error) { next(error); }
@@ -57,30 +57,36 @@ async function eliminar(req, res, next) {
 
 async function marcarInteres(req, res, next) {
     try {
-        const id_publicacion = req.params.id;
-        const id_usuario_interesado = req.session.userId;
-        const motivo = req.body.motivoInteres;
+        const { id, usuario } = req.body;
 
-        if (isNaN(Number(id_publicacion)) || !motivo) { res.status(400).json({ error: 'Datos inválidos' }); }
+        if (isNaN(Number(id)) || isNaN(Number(usuario))) { res.status(400).json({ error: 'Datos inválidos' }); }
         
-        const publicacion = await Publicacion.findByPk(id_publicacion);
-        const id_usuario_dueño = publicacion.id_usuario;
-        await Notificacion.create({ tipo_evento: 'Interés', motivo: motivo, id_causante: id_usuario_interesado, id_dueño: id_usuario_dueño, id_publicacion: id_publicacion });
+        const interesado = await Usuario.findByPk(req.session.userId);
+        const dueño = await Usuario.findByPk(usuario);
+        const loSigo = await interesado.hasSeguidos(dueño);
 
-        res.redirect(`/publicacion/ver/${id_publicacion}`);
+        if (!loSigo) await interesado.addSeguidos(dueño);
+        await Notificacion.create({
+            tipo_evento: 'Interés',
+            id_causante: req.session.userId,
+            id_dueño: usuario,
+            id_publicacion: id
+        });
+
+        res.redirect('/mensaje/chats');
     } catch (error) { next(error); }
 }
 
 async function guardar(req, res, next) {
     try {
-        const id_publicacion = req.params.id;
         const id_usuario = req.session.userId;
-        const nombreLista = req.body.nombreLista;
+        const { id: id_publicacion, nombre } = req.body;
 
-        if (isNaN(Number(id_publicacion)) || !nombreLista) { res.status(400).json({ error: 'Datos inválidos' }); }
+        if (isNaN(Number(id_publicacion)) || !nombre) { res.status(400).json({ error: 'Datos inválidos' }); }
 
-        await Favorito.create({ nombre: nombreLista, id_publicacion: id_publicacion, id_usuario: id_usuario });
-        res.redirect(`/publicacion/ver/${id_publicacion}`);
+        const existe = await Favorito.findOne({ where: { nombre: nombre, id_publicacion: id_publicacion, id_usuario: id_usuario } });
+        if (!existe) await Favorito.create({ nombre: nombre, id_publicacion: id_publicacion, id_usuario: id_usuario });
+        res.json({ ok: true });
     } catch (error) { next(error); }
 }
 

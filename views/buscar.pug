@@ -17,37 +17,148 @@ block content
                         span= item.titulo
         else 
             span
-            p No se encontraron resultados para "#{nombre}"
+            p No se encontraron resultados
 
     div#contenido
         div
-            h2 Resultados para "#{nombre}"
+            p Opciones:
+            form#form-usrs(action="/buscar", method="post", style="display: none;") 
+                div(style="background-color: #dbdbdb; padding: 5px;")
+                    input#input-nombre(type="checkbox", name="buscarPorNombre")
+                    label(for="nombre") Nombre 
+                    input(type="checkbox", name="buscarPorRecientes", value="true")
+                    label(for="recientes") Recientes 
+                    input(type="checkbox", name="buscarPorAntiguos", value="true")
+                    label(for="antiguos") Antiguos 
+
+                    input#input-busqueda-usuario(type="text", name="nombre", placeholder="Ingresá el nombre...", style="display: none;")
+                    button(type="submit") 🔎
+
+            form#form-pubs(action="/buscar", method="post") 
+                div(style="background-color: #dbdbdb; padding: 5px;")
+                    input#input-titulo(type="checkbox", name="buscarPorTitulo", value="true")
+                    label(for="titulo") Título 
+                    input(type="checkbox", name="buscarPorPopulares", value="true")
+                    label(for="populares") Populares 
+                    input(type="checkbox", name="buscarPorImpopulares", value="true")
+                    label(for="impopulares") Impopulares 
+                    input(type="checkbox", name="buscarPorRecientes", value="true")
+                    label(for="recientes") Recientes 
+                    input(type="checkbox", name="buscarPorAntiguos", value="true")
+                    label(for="antiguos") Antiguos 
+                    input#input-etiqueta(type="checkbox", name="buscarPorEtiqueta", value="true")
+                    label(for="etiquetas") Etiquetas 
+
+                    input#input-busqueda-publicacion(type="text", name="titulo", placeholder="Ingresá el nombre...", style="display: none;")
+                    div#seccion-etiquetas(style="display: none;")
+                        div.fila-etiqueta
+                            input(type="text", name="etiquetas[]", placeholder="Escribí...")
+                            button(type="button", onclick="nuevaEtiqueta()") ➕
+
+                    button(type="submit") 🔎
+
             nav#secciones-botones
                 div.tab-buttons
-                    button#boton-usuarios(onclick="mostrarSeccion('usuarios')") 
-                        h3
-                            strong Usuarios
                     button#boton-publicaciones(onclick="mostrarSeccion('publicaciones')") 
                         h3
                             strong Publicaciones
+                    button#boton-usuarios(onclick="mostrarSeccion('usuarios')") 
+                        h3
+                            strong Usuarios
 
             main#secciones 
-                div#seccion-usuarios.seccion-perfil
+                div#seccion-usuarios.seccion-perfil(style="display: none;")
                     +renderizarResultados(usuarios)
-                div#seccion-publicaciones.seccion-perfil(style="display: none;")
+                div#seccion-publicaciones.seccion-perfil
                     +renderizarResultados(publicaciones)
 
     script.
-        // MOSTRAR SECCIÓN SELECCIONADA
+        const nombre = document.getElementById('input-nombre');
+        const titulo = document.getElementById('input-titulo');
+        const etiqueta = document.getElementById('input-etiqueta');
+        nombre.addEventListener('change', (event) => {
+            const input_usuario = document.getElementById('input-busqueda-usuario');
+            if (event.target.checked) {
+                input_usuario.style.display = 'block';
+                input_usuario.required = true;
+            }
+            else {
+                input_usuario.style.display = 'none';
+                input_usuario.required = false;
+                input_usuario.value = '';
+            }
+        });
+        titulo.addEventListener('change', (event) => {
+            const input_publicacion = document.getElementById('input-busqueda-publicacion');
+            if (event.target.checked) {
+                input_publicacion.style.display = 'block';
+                input_publicacion.required = true;
+            }
+            else {
+                input_publicacion.style.display = 'none';
+                input_publicacion.required = false;
+                input_publicacion.value = '';
+            }
+        });
+        etiqueta.addEventListener('change', (event) => {
+            const seccion_etiquetas = document.getElementById('seccion-etiquetas');
+            const etiquetas = seccion_etiquetas.querySelectorAll('input');
+            if (event.target.checked) {
+                seccion_etiquetas.style.display = 'block';
+                if (etiquetas && etiquetas.length > 0) etiquetas.forEach(e => { e.required = true; });
+            }
+            else {
+                seccion_etiquetas.style.display = 'none';
+                if (etiquetas && etiquetas.length > 0) {
+                    etiquetas.forEach(e => {
+                        e.required = false;
+                        e.value = '';
+                    });
+                }
+            }
+        });
+
+        // Mostrar sección seleccionada
         function mostrarSeccion(idSeccion) {
             const boton_usuarios = document.getElementById('boton-usuarios');
             const boton_publicaciones = document.getElementById('boton-publicaciones');
             const seccion_usuarios = document.getElementById('seccion-usuarios');
             const seccion_publicaciones = document.getElementById('seccion-publicaciones');
+            const form_usrs = document.getElementById('form-usrs');
+            const form_pubs = document.getElementById('form-pubs');
 
-            seccion_usuarios.style.display = idSeccion === 'usuarios' ? 'grid' : 'none';
-            seccion_publicaciones.style.display = idSeccion === 'publicaciones' ? 'grid' : 'none';
+            if (idSeccion === "usuarios") {
+                seccion_usuarios.style.display = 'grid';
+                seccion_publicaciones.style.display = 'none';
+                form_usrs.style.display = 'block';
+                form_pubs.style.display = 'none';
+            }
+            if (idSeccion === "publicaciones") {
+                seccion_usuarios.style.display = 'none';
+                seccion_publicaciones.style.display = 'grid';
+                form_usrs.style.display = 'none';
+                form_pubs.style.display = 'block';
+            }
 
             document.querySelectorAll('#secciones-botones button').forEach(btn => btn.classList.remove('active'));
             event.currentTarget.classList.add('active');
         }
+
+        function nuevaEtiqueta() {
+            const seccion_etiquetas = document.getElementById('seccion-etiquetas');
+            const cantidad_actual = seccion_etiquetas.querySelectorAll('.fila-etiqueta').length;
+            const contenedor = document.createElement('div');
+
+            if (cantidad_actual > 4) return alert('Solo podés añadir hasta 5 etiquetas');
+
+            contenedor.className = 'fila-etiqueta';
+
+            contenedor.innerHTML = `
+                <input type="text" name="etiquetas[]" placeholder="Escribí..." required>
+                <button type="button" onclick="eliminarEtiqueta(this)">🗑️</button>
+            `;
+
+            seccion_etiquetas.appendChild(contenedor);
+        }
+
+        function eliminarEtiqueta(boton) { boton.parentElement.remove(); }

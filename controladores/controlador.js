@@ -129,12 +129,83 @@ async function controlDeDenuncias(usuario) {
 
 async function buscar(req, res, next) {
     try {
-        const nombre = req.query.nombre;
-        if (!nombre) return res.status(404).send('Datos inválidos');
-        const usuarios = await Usuario.findAll({ where: { nombre: { [Op.iLike]: `%${nombre}%` } } });
-        const publicaciones = await Publicacion.findAll({ where: { titulo: { [Op.iLike]: `%${nombre}%` } }, include: [{ model: Imagen }] });
-        res.render('buscar', { usuarios, publicaciones, nombre });
-    } catch (error) { next(); }
+        let usuarios = [], publicaciones = [];
+
+        if (req.method === "GET") {
+            const [publicacionesAleatorias, usuariosAleatorios] = await Promise.all([
+                Publicacion.findAll({ limit: 60, attributes: ['id'], order: sequelize.random(), raw: true }),
+                Usuario.findAll({ limit: 60, attributes: ['id'], order: sequelize.random(), raw: true })
+            ]);
+
+            const idsPublicaciones = publicacionesAleatorias.map(p => p.id);
+            const idsUsuarios = usuariosAleatorios.map(u => u.id);
+    
+            const [pubsCompletas, usrsCompletos] = await Promise.all([
+                Publicacion.findAll({
+                    where: { id: { [Op.in]: idsPublicaciones } }, attributes: ['id', 'titulo'],
+                    include: [{ model: Imagen, attributes: ['id', 'imagen'] }]
+                }),
+                Usuario.findAll({
+                    where: { id: { [Op.in]: idsUsuarios } },
+                    attributes: ['id', 'nombre', 'foto_perfil']
+                })
+            ]);
+
+            return res.render('buscar', { usuarios: usrsCompletos, publicaciones: pubsCompletas });
+        }
+        
+        const {
+            buscarPorNombre, buscarPorTitulo, buscarPorReciente,
+            buscarPorAntiguo, buscarPorPopulares, buscarPorImpopulares,
+            buscarPorEtiqueta, nombre, titulo, etiquetas
+        } = req.body;
+        
+        let condicionesUsrs = {}, condicionesPubs = {};
+        let includePubs = [{ model: Imagen, attributes: ['id', 'imagen'], include: [{ model: Valoracion }] }];
+        let ordenUsrs = [['createdAt', 'DESC']], ordenPubs = [['createdAt', 'DESC']];
+        
+        if (buscarPorNombre && nombre) condicionesUsrs.nombre = { [Op.iLike]: `%${nombre.trim()}%` };
+        if (buscarPorTitulo && titulo) condicionesPubs.titulo = { [Op.iLike]: `%${titulo.trim()}%` };
+        if (buscarPorReciente) { ordenUsrs = [['createdAt', 'DESC']]; ordenPubs = [['createdAt', 'DESC']]; }
+        if (buscarPorAntiguo) { ordenUsrs = [['createdAt', 'ASC']]; ordenPubs = [['createdAt', 'ASC']]; }
+        if (buscarPorEtiqueta && etiquetas && etiquetas.length > 0) {
+            const listaEtiquetas = etiquetas.map(e => e.startsWith('#') ? e.split('#')[1].toLowerCase().trim() : e.toLowerCase().trim());
+            includePubs.push({ model: Etiqueta, where: { nombre: { [Op.in]: listaEtiquetas } }, attributes: ['nombre'], required: true });
+        }
+        
+        [usuarios, publicaciones] = await Promise.all([
+            Usuario.findAll({
+                where: condicionesUsrs,
+                attributes: ['id', 'nombre', 'foto_perfil', 'createdAt'],
+                order: ordenUsrs
+            }),
+            Publicacion.findAll({
+                where: condicionesPubs,
+                attributes: ['id', 'titulo', 'createdAt'],
+                include: includePubs,
+                order: ordenPubs,
+                limit: 60
+            })
+        ]);
+        
+        let listaPublicaciones = publicaciones.map(p => p.toJSON());
+        if (buscarPorPopulares || buscarPorImpopulares) {
+            listaPublicaciones.forEach(pub => {
+                let totalLikes = 0;
+                pub.Imagens.forEach(img => {
+                    const valoraciones = img.Valoracions || [];
+                    const valoracionesPositivas = valoraciones.filter(v => v.valoracion === true);
+                    totalLikes += valoracionesPositivas.length;
+                });
+                pub.totalLikesCalculados = totalLikes;
+            });
+            
+            if (buscarPorPopulares) listaPublicaciones.sort((a, b) => b.totalLikesCalculados - a.totalLikesCalculados);
+            if (buscarPorImpopulares) listaPublicaciones.sort((a, b) => a.totalLikesCalculados - b.totalLikesCalculados);
+        }
+
+        res.render('buscar', { usuarios, publicaciones: listaPublicaciones });
+    } catch (error) { next(error); }
 }
 
-module.exports = { contenidoPaginaPrincipal, buscar };
+module.exports = { contenidoPaginaPrincipal, buscar }

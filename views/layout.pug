@@ -12,22 +12,13 @@ html
       footer
         nav 
           if (userIdSesion)
-            button#button-buscador(onclick="alternarBuscador()") 🔎
-            form#form-busqueda(action="/buscar", method="get", style="display: none;")
-              input#input-buscador(type="text", name="nombre", placeholder="Ingresá el nombre...")
-            a(href="/publicacion/crear") ➕
-            a(href="/") 🏠
-            a(href="/mensaje/chats") 📫
-            a(href="/notificacion") 🔔
-            a(href=`/usuario/${userIdSesion}/perfil`) 👤
+            a(href="/buscar", title="Buscar") 🔎
+            a(href="/publicacion/crear", title="Agregar una publicación") ➕
+            a(href="/", title="Inicio") 🏠
+            a(href="/mensaje/chats", title="Chats") 📫
+            a(href="/notificacion", title="Notificaciones") 🔔
+            a(href=`/usuario/${userIdSesion}/perfil`, title="Perfil") 👤
           else 
-            a(href="/usuario/ingresar") 🗝️ 
-            a(href="/") 🏠
-            a(href="/usuario/registrarse") 📓
-
-    script.
-      function alternarBuscador() {
-        const form_busqueda = document.getElementById('form-busqueda');
-        const button_buscador = document.getElementById('button-buscador');
-        form_busqueda.style.display = (form_busqueda.style.display === 'none') ? 'inline-block' : 'none';
-      }
+            a(href="/usuario/ingresar", title="Ingresar") 🗝️ 
+            a(href="/", title="Inicio") 🏠
+            a(href="/usuario/registrarse", title="Registrarse") 📓

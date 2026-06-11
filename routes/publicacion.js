@@ -18,13 +18,13 @@ router.get('/ver/:id', publicacion.ver);
 /* Modificar */
 router.put('/modificar', publicacion.modificar);
 
-/* Eliminar publicación */
-router.post('/eliminar/:id', publicacion.eliminar);
+/* Eliminar */
+router.delete('/eliminar', publicacion.eliminar);
 
 /* Marcar interés */
-router.post('/:id/marcarInteres', publicacion.marcarInteres);
+router.post('/marcarInteres', publicacion.marcarInteres);
 
 /* Guardar */
-router.post('/:id/guardar', publicacion.guardar);
+router.post('/guardar', publicacion.guardar);
 
 module.exports = router;

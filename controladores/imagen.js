@@ -24,11 +24,9 @@ async function denunciar(req, res, next) {
 
 async function eliminar(req, res, next) {
     try {
-        const id = req.params.id;
+        const { id } = req.body;
         if (isNaN(Number(id))) return res.status(400).render('error', { error: new Error('Datos inválidos') });
         await Imagen.destroy({ where: { id: id } });
-
-        res.redirect('back');
     } catch (error) { next(error); }
 }
 
