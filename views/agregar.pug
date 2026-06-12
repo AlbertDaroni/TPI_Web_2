@@ -38,21 +38,43 @@ block content
                 btnSubmit.disabled = true;
                 btnSubmit.innerText = 'Subiendo... ⏳';
 
-                const formData = new FormData(this);
                 const inputFiles = document.getElementById('input-imagenes');
-                
-                formData.delete('imagenes'); 
+                const arrayBase64Promesas = [];
 
                 for (let i = 0; i < inputFiles.files.length; i++) {
                     const archivoComprimido = await comprimirImagen(inputFiles.files[i]);
-                    formData.append('imagenes', archivoComprimido);
+                    
+                    const promesaBase64 = new Promise((resolve) => {
+                        const lector = new FileReader();
+                        lector.readAsDataURL(archivoComprimido);
+                        lector.onloadend = () => resolve(lector.result);
+                    });
+                    arrayBase64Promesas.push(promesaBase64);
                 }
+
+                const imagenesBase64 = await Promise.all(arrayBase64Promesas);
+
+                const tituloVal = this.querySelector('input[name="titulo"]').value;
+                const descVal = this.querySelector('textarea[name="descripcion"]').value;
+                
+                const licencias = Array.from(this.querySelectorAll('input[name^="licencias"]:checked')).map(el => el.value);
+                const marcasDeAgua = Array.from(this.querySelectorAll('input[name^="marcasDeAgua"]:checked')).map(el => el.value);
+                const etiquetas = Array.from(this.querySelectorAll('input[name="etiquetas[]"]')).map(el => el.value);
 
                 try {
                     const res = await fetch('/publicacion/crear', {
                         method: 'POST',
-                        body: formData
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                            titulo: tituloVal, 
+                            descripcion: descVal, 
+                            licencias, 
+                            marcasDeAgua, 
+                            etiquetas, 
+                            imagenes: imagenesBase64
+                        })
                     });
+
                     if (res.ok) {
                         window.location.href = '/';
                     } else {

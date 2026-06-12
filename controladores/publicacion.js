@@ -7,19 +7,18 @@ async function crear(req, res, next) {
 
         const { titulo, descripcion, licencias, marcasDeAgua, etiquetas, imagenes } = req.body;
 
+        console.log("Cantidad de imágenes en Base64:", imagenes ? imagenes.length : 0);
+
         if (!titulo || !imagenes || etiquetas.length === 0 || imagenes.length === 0) { res.render('agregar', { error: 'Campos incompletos' }); }
         for (const licencia of licencias) { if (licencia === undefined) { res.render('agregar', { error: 'Campos incompletos' }); } }
         for (const etiqueta of etiquetas) { if (!etiqueta) { res.render('agregar', { error: 'Campos incompletos' }); } }
             
         const nuevaPublicacion = await Publicacion.create({ titulo: titulo, descripcion: descripcion, id_usuario: id });
         const nuevasImagenes = imagenes.map((imgBase64, indice) => {
-            const conLicencia = licencias[indice] === 'true';
-            const conMarca = marcasDeAgua && marcasDeAgua[indice] === 'true';
-
             return Imagen.create({ 
-                imagen: imgBase64, // Guarda la cadena comprimida ultra liviana directamente en la base de datos
-                licencia: conLicencia, 
-                marcaDeAgua: conMarca ? 'Marca de agua' : null, 
+                imagen: imgBase64,
+                licencia: licencias[indice], 
+                marcaDeAgua: marcasDeAgua[indice], 
                 id_publicacion: nuevaPublicacion.id 
             });
         });
