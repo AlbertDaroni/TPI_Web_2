@@ -4,7 +4,6 @@ const logger = require('morgan');
 const express = require('express');
 const sequelize = require('./config/db');
 const sesion = require('express-session');
-const sesion = require('express-session');
 const createError = require('http-errors');
 const cookieParser = require('cookie-parser');
 
