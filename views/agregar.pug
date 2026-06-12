@@ -26,7 +26,6 @@ block content
             button(type="submit") Crear
 
     script.
-        script.
         const inputImagenes = document.getElementById('input-imagenes');
         const contenedorPrev = document.getElementById('contenedor-previsualizaciones');
         const formCrearPub = document.getElementById('form-crear-pub');
@@ -78,7 +77,6 @@ block content
             
             if (archivosSeleccionados.length === 0) return alert('Debés cargar al menos una imagen');
 
-            // CLOUDINARY CONFIG: Reemplazá esto con tus datos de Cloudinary
             const CLOUD_NAME = "dthkzpy1e"; 
             const UPLOAD_PRESET = "imagenURL"; 
 
@@ -88,7 +86,7 @@ block content
                     formDataCloudinary.append('file', archivo);
                     formDataCloudinary.append('upload_preset', UPLOAD_PRESET);
 
-                    return fetch(`https://cloudinary.com{CLOUD_NAME}/image/upload`, {
+                    return fetch(`https://cloudinary.com${CLOUD_NAME}/image/upload`, {
                         method: 'POST',
                         body: formDataCloudinary
                     }).then(res => {

@@ -7,9 +7,9 @@ async function crear(req, res, next) {
 
         const { titulo, descripcion, licencias, marcasDeAgua, etiquetas, imagenes } = req.body;
 
-        if (!titulo || !imagenes || etiquetas.length === 0 || imagenes.length === 0) { res.render('agregar', { error: 'Campos incompletos' }); }
-        for (const licencia of licencias) { if (licencia === undefined) { res.render('agregar', { error: 'Campos incompletos' }); } }
-        for (const etiqueta of etiquetas) { if (!etiqueta) { res.render('agregar', { error: 'Campos incompletos' }); } }
+        if (!titulo || !imagenes || etiquetas.length === 0 || imagenes.length === 0) { return res.render('agregar', { error: 'Campos incompletos' }); }
+        for (const licencia of licencias) { if (licencia === undefined) { return res.render('agregar', { error: 'Campos incompletos' }); } }
+        for (const etiqueta of etiquetas) { if (!etiqueta) { return res.render('agregar', { error: 'Campos incompletos' }); } }
             
         const nuevaPublicacion = await Publicacion.create({ titulo: titulo, descripcion: descripcion, id_usuario: id });
         const nuevasImagenes = imagenes.map((url, indice) => {
