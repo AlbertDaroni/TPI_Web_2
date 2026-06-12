@@ -8,7 +8,12 @@ block content
         if (lista && lista.length > 0)
             each pub in lista 
                 div.publicacion-mini(onclick=`location.href="/publicacion/ver/${pub.id}"`)
-                    img(src=pub.Imagens[0].imagen)
+                    if (pub.Imagens && pub.Imagens.length > 0)
+                        img(src=pub.Imagens[0].imagen)
+                    else if (pub.Imagen)
+                        img(src=pub.Imagen)
+                    else
+                        img(src="/images/sin_imagen.png")
         else 
             p.sin-contenido Aún no hay publicaciones
 

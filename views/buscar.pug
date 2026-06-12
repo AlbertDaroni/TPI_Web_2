@@ -13,7 +13,12 @@ block content
                         span= item.nombre
                 else if (item.titulo) 
                     div.resultado(onclick=`location.href='/publicacion/ver/${item.id}'`)
-                        img.publicacion-mini(src=item.Imagens[0].imagen)
+                        if (item.Imagens && item.Imagens.length > 0)
+                            img.publicacion-mini(src=item.Imagens[0].imagen)
+                        else if (item.Imagen)
+                            img.publicacion-mini(src=item.Imagen)
+                        else
+                            img.publicacion-mini(src="/images/sin_imagen.png")
                         span= item.titulo
         else 
             span

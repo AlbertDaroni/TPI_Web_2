@@ -133,8 +133,8 @@ async function buscar(req, res, next) {
 
         if (req.method === "GET") {
             const [publicacionesAleatorias, usuariosAleatorios] = await Promise.all([
-                Publicacion.findAll({ limit: 60, attributes: ['id'], order: sequelize.random(), raw: true }),
-                Usuario.findAll({ limit: 60, attributes: ['id'], order: sequelize.random(), raw: true })
+                Publicacion.findAll({ limit: 30, attributes: ['id'], order: sequelize.random(), raw: true }),
+                Usuario.findAll({ limit: 20, attributes: ['id'], order: sequelize.random(), raw: true })
             ]);
 
             const idsPublicaciones = publicacionesAleatorias.map(p => p.id);
@@ -184,7 +184,7 @@ async function buscar(req, res, next) {
                 attributes: ['id', 'titulo', 'createdAt'],
                 include: includePubs,
                 order: ordenPubs,
-                limit: 60
+                limit: 20
             })
         ]);
         
