@@ -8,6 +8,7 @@
     "db:init": "node config/sync.js"
   },
   "dependencies": {
+    "connect-session-sequelize": "^8.0.6",
     "cookie-parser": "~1.4.4",
     "debug": "~2.6.9",
     "dotenv": "^17.4.2",

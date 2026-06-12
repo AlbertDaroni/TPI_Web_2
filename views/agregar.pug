@@ -6,7 +6,7 @@ block estilo
 block content 
     div#contenido
         h4 Crear una publicación 
-        form(action="/publicacion/crear", method="post", enctype="multipart/form-data") 
+        form#form-crear-pub(action="/publicacion/crear", method="post", enctype="multipart/form-data") 
             label(for="titulo") Título 
             input(type="text", name="titulo", required)
 
@@ -28,6 +28,44 @@ block content
     script.
         const inputImagenes = document.getElementById('input-imagenes');
         const contenedorPrev = document.getElementById('contenedor-previsualizaciones');
+        const formulario = document.getElementById('form-crear-pub');
+
+        if (formulario) {
+            formulario.addEventListener('submit', async function(evento) {
+                evento.preventDefault();
+                
+                const btnSubmit = this.querySelector('button[type="submit"]');
+                btnSubmit.disabled = true;
+                btnSubmit.innerText = 'Subiendo... ⏳';
+
+                const formData = new FormData(this);
+                const inputFiles = document.getElementById('input-imagenes');
+                
+                formData.delete('imagenes'); 
+
+                for (let i = 0; i < inputFiles.files.length; i++) {
+                    const archivoComprimido = await comprimirImagen(inputFiles.files[i]);
+                    formData.append('imagenes', archivoComprimido);
+                }
+
+                try {
+                    const res = await fetch('/publicacion/crear', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    if (res.ok) {
+                        window.location.href = '/';
+                    } else {
+                        alert('Error al crear la publicación');
+                        btnSubmit.disabled = false;
+                        btnSubmit.innerText = 'Crear';
+                    }
+                } catch (err) {
+                    console.error(err);
+                    btnSubmit.disabled = false;
+                }
+            });
+        }
 
         inputImagenes.addEventListener('change', function() {
             contenedorPrev.innerHTML = '';
@@ -94,3 +132,34 @@ block content
 
         function eliminarImagen(boton) { boton.parentElement.remove(); }
         function eliminarEtiqueta(boton) { boton.parentElement.remove(); }
+
+        function comprimirImagen(archivo) {
+            return new Promise((resolve) => {
+                const lector = new FileReader();
+                lector.readAsDataURL(archivo);
+                lector.onload = (evento) => {
+                    const img = new Image();
+                    img.src = evento.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const MAX_ANCHO = 800;
+                        let ancho = img.width;
+                        let alto = img.height;
+
+                        if (ancho > MAX_ANCHO) {
+                            alto *= MAX_ANCHO / ancho;
+                            ancho = MAX_ANCHO;
+                        }
+
+                        canvas.width = ancho;
+                        canvas.height = alto;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, ancho, alto);
+
+                        canvas.toBlob((blob) => {
+                            resolve(new File([blob], archivo.name, { type: 'image/jpeg' }));
+                        }, 'image/jpeg', 0.6);
+                    };
+                };
+            });
+        }

@@ -41,7 +41,7 @@ Luego ingresá a: `http://localhost:3000`.
 
 ## Cuentas de usuario para pruebas
 
-La base de datos cuenta con 200 usuarios, permitiendo simular una red social real.
+La base de datos cuenta con 50 usuarios, permitiendo simular una red social real.
 
 Ejemplo para el ingreso:
 

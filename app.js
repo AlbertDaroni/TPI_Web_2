@@ -2,6 +2,8 @@ require('dotenv').config();
 const path = require('path');
 const logger = require('morgan');
 const express = require('express');
+const sequelize = require('./config/db');
+const sesion = require('express-session');
 const sesion = require('express-session');
 const createError = require('http-errors');
 const cookieParser = require('cookie-parser');
@@ -23,6 +25,11 @@ const app = express();
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'pug');
 
+const SequelizeStore = require('connect-session-sequelize')(sesion.Store);
+const almacenSesiones = new SequelizeStore({ db: sequelize });
+
+almacenSesiones.sync();
+
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -30,11 +37,13 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(sesion({
   secret: process.env.SESSION_SECRET,
+  store: almacenSesiones,
   resave: false,
   saveUninitialized: true,
   cookie: {
     maxAge: 1000 * 60 * 60 * 24 * 30,
-    secure: false
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax'
   }
 }));
 
