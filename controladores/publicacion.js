@@ -13,7 +13,9 @@ async function crear(req, res, next) {
             
         const nuevaPublicacion = await Publicacion.create({ titulo: titulo, descripcion: descripcion, id_usuario: id });
         const nuevasImagenes = req.files.map((imagen, indice) => {
-            return Imagen.create({ imagen: `/uploads/${imagen.filename}`, licencia: licencias[indice], marcaDeAgua: marcasDeAgua[indice], id_publicacion: nuevaPublicacion.id });
+            const stringBase64 = `data:${imagen.mimetype};base64,${imagen.buffer.toString('base64')}`;
+            // return Imagen.create({ imagen: `/uploads/${imagen.filename}`, licencia: licencias[indice], marcaDeAgua: marcasDeAgua[indice], id_publicacion: nuevaPublicacion.id });
+            return Imagen.create({ imagen: stringBase64, licencia: licencias[indice], marcaDeAgua: marcasDeAgua[indice], id_publicacion: nuevaPublicacion.id });
         });
         const listaEtiquetas = Array.isArray(etiquetas) ? etiquetas : [etiquetas];
         const nuevasEtiquetas = listaEtiquetas.map(e => {

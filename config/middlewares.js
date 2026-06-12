@@ -11,13 +11,22 @@ const protegerRuta = async (req, res, next) => {
 };
 
 /* Guardador de imágenes */
-const storage = multer.diskStorage({
+/* const storage = multer.diskStorage({
     destination: 'public/uploads/',
     filename: (req, file, cb) => {
       cb(null, Date.now() + path.extname(file.originalname));
     }
 });
 
-const upload = multer({ storage });
+const upload = multer({ storage }); */
+
+const almacenamientoEnMemoria = multer.memoryStorage();
+
+const upload = multer({ 
+    storage: almacenamientoEnMemoria,
+    limits: {
+        fileSize: 1024 * 1024 * 10
+    }
+});
 
 module.exports = { protegerRuta, upload };
