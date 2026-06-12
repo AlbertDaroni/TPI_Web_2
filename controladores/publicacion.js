@@ -5,7 +5,8 @@ async function crear(req, res, next) {
         const id = req.session.userId;
         if (req.method === 'GET') return res.render('agregar', { id });
 
-        const { titulo, descripcion, licencias, marcasDeAgua, etiquetas, imagenes } = req.body;
+        const { titulo, descripcion, licencias, marcasDeAgua, etiquetas } = req.body;
+        const imagenes = req.body['imagenes[]'] || []; 
 
         console.log("Cantidad de imágenes en Base64:", imagenes ? imagenes.length : 0);
 

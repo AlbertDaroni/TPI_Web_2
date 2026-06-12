@@ -41,6 +41,7 @@ block content
                 const inputFiles = document.getElementById('input-imagenes');
                 const arrayBase64Promesas = [];
 
+                // Reducir las fotos y generar las cadenas Base64 livianas
                 for (let i = 0; i < inputFiles.files.length; i++) {
                     const archivoComprimido = await comprimirImagen(inputFiles.files[i]);
                     
@@ -53,26 +54,17 @@ block content
                 }
 
                 const imagenesBase64 = await Promise.all(arrayBase64Promesas);
-
-                const tituloVal = this.querySelector('input[name="titulo"]').value;
-                const descVal = this.querySelector('textarea[name="descripcion"]').value;
+                const formData = new FormData(this);
                 
-                const licencias = Array.from(this.querySelectorAll('input[name^="licencias"]:checked')).map(el => el.value);
-                const marcasDeAgua = Array.from(this.querySelectorAll('input[name^="marcasDeAgua"]:checked')).map(el => el.value);
-                const etiquetas = Array.from(this.querySelectorAll('input[name="etiquetas[]"]')).map(el => el.value);
+                // Eliminar los archivos pesados binarios que Multer no puede leer en Vercel
+                formData.delete('imagenes'); 
+
+                imagenesBase64.forEach(imgBase64 => { formData.append('imagenes[]', imgBase64); });
 
                 try {
                     const res = await fetch('/publicacion/crear', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ 
-                            titulo: tituloVal, 
-                            descripcion: descVal, 
-                            licencias, 
-                            marcasDeAgua, 
-                            etiquetas, 
-                            imagenes: imagenesBase64
-                        })
+                        body: formData
                     });
 
                     if (res.ok) {
@@ -85,6 +77,7 @@ block content
                 } catch (err) {
                     console.error(err);
                     btnSubmit.disabled = false;
+                    btnSubmit.innerText = 'Crear';
                 }
             });
         }
@@ -109,7 +102,7 @@ block content
 
                         html.innerHTML = `
                             <div class="contenedor-prev-imagen">
-                                <img src="${evento.target.result}" alt="Previsualización">
+                                <img src="${evento.target.result}" alt="Previsualización" style="width: 80px; height: 80px; object-fit: cover;">
                             </div>
                             <div class="contenedor-prev-opciones">
                                 <h5>Configuración de la imagen #${indice + 1}</h5>
@@ -122,7 +115,7 @@ block content
                                 </div>
                                 <div class="opcion-grupo">
                                     <label>Añadir Marca de Agua</label>
-                                    <input type="text" name="marcasDeAgua[${indice}]">
+                                    <input type="text" name="marcasDeAgua[${indice}]" placeholder="Escribí el texto...">
                                 </div>
                             </div>
                             <button type="button" onclick="eliminarImagen(this)">🗑️</button>
@@ -143,18 +136,17 @@ block content
             if (cantidad_actual > 4) return alert('Solo podés añadir hasta 5 etiquetas');
 
             contenedor.className = 'fila-etiqueta';
-
             contenedor.innerHTML = `
                 <input type="text" name="etiquetas[]" required>
                 <button type="button" onclick="eliminarEtiqueta(this)">🗑️</button>
             `;
-
             seccion_etiquetas.appendChild(contenedor);
         }
 
         function eliminarImagen(boton) { boton.parentElement.remove(); }
         function eliminarEtiqueta(boton) { boton.parentElement.remove(); }
 
+        // Función de compresión
         function comprimirImagen(archivo) {
             return new Promise((resolve) => {
                 const lector = new FileReader();
