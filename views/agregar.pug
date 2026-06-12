@@ -86,7 +86,7 @@ block content
                     formDataCloudinary.append('file', archivo);
                     formDataCloudinary.append('upload_preset', UPLOAD_PRESET);
 
-                    return fetch(`https://cloudinary.com/${CLOUD_NAME}/image/upload`, {
+                    return fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
                         method: 'POST',
                         body: formDataCloudinary
                     }).then(res => {
