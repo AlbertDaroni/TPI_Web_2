@@ -39,7 +39,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(sesion({
   secret: process.env.SESSION_SECRET,
   store: almacenSesiones,
-  resave: false,
+  resave: true,
   saveUninitialized: true,
   cookie: {
     maxAge: 1000 * 60 * 60 * 24 * 30,
