@@ -12,6 +12,12 @@ const sequelize = new Sequelize(process.env.DB_NAME, process.env.DB_USER, proces
       min: 0,
       acquire: 30000,
       idle: 10000
+    },
+    dialectOptions: { // Esto es para que Vercel lo acepte
+        ssl: {
+            require: true,
+            rejectUnauthorized: false
+        }
     }
 });
 
