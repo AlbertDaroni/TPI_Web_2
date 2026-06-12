@@ -31,7 +31,7 @@ Creá un archivo llamado `.env` en la raíz del proyecto y completalo con:
 - SESSION_SECRET=mi-clave-secreta-de-usuario
 
 ### 4. Comandos maestros
-- Inicializar y poblar la Base de Datos: `npm run setup:db`.
+- Inicializar y poblar la Base de Datos: `npm run db:init`.
 - Modo de producción: `npm start`.
 - Modo de desarrollo: `npm run dev`.
 
@@ -47,9 +47,9 @@ Ejemplo para el ingreso:
 
 | Parámetro | Credenciales de Ejemplo |
 | :--- | :--- |
-| **Nombre** | `Manuel` |
-| **Email** | `correodemanuel@gmail.com` |
-| **Contraseña** | `manuel123` |
+| **Nombre** | `Nahuel` |
+| **Email** | `correodenahuel@gmail.com` |
+| **Contraseña** | `nahuel123` |
 
 El correo de todos los usuarios es `correode<nombre>@gmail.com` y la contraseña `<nombre>123`.
 
