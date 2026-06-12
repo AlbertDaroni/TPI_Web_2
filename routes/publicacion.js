@@ -7,7 +7,8 @@ router.use(protegerRuta);
 
 /* Crear */
 router.get('/crear', publicacion.crear);
-router.post('/crear', upload.array('imagenes', 5), publicacion.crear);
+// router.post('/crear', upload.array('imagenes', 5), publicacion.crear);
+router.post('/crear', publicacion.crear);
 
 /* Buscar por etiqueta */
 router.get('/etiqueta/:nombre', publicacion.buscarPorEtiqueta);

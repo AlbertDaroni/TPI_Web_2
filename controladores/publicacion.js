@@ -5,18 +5,27 @@ async function crear(req, res, next) {
         const id = req.session.userId;
         if (req.method === 'GET') return res.render('agregar', { id });
 
-        const { titulo, descripcion, licencias, marcasDeAgua, etiquetas } = req.body;
+        const { titulo, descripcion, licencias, marcasDeAgua, etiquetas, imagenes } = req.body;
 
-        if (!titulo || req.files.length === 0 || etiquetas.length === 0 || licencias.length === 0) { res.render('agregar', { error: 'Campos incompletos' }); }
+        if (!titulo || !imagenes || etiquetas.length === 0 || imagenes.length === 0) { res.render('agregar', { error: 'Campos incompletos' }); }
         for (const licencia of licencias) { if (licencia === undefined) { res.render('agregar', { error: 'Campos incompletos' }); } }
         for (const etiqueta of etiquetas) { if (!etiqueta) { res.render('agregar', { error: 'Campos incompletos' }); } }
             
         const nuevaPublicacion = await Publicacion.create({ titulo: titulo, descripcion: descripcion, id_usuario: id });
-        const nuevasImagenes = req.files.map((imagen, indice) => {
-            const stringBase64 = `data:${imagen.mimetype};base64,${imagen.buffer.toString('base64')}`;
-            // return Imagen.create({ imagen: `/uploads/${imagen.filename}`, licencia: licencias[indice], marcaDeAgua: marcasDeAgua[indice], id_publicacion: nuevaPublicacion.id });
-            return Imagen.create({ imagen: stringBase64, licencia: licencias[indice], marcaDeAgua: marcasDeAgua[indice], id_publicacion: nuevaPublicacion.id });
+        const nuevasImagenes = imagenes.map((imgBase64, indice) => {
+            const conLicencia = licencias[indice] === 'true';
+            const conMarca = marcasDeAgua && marcasDeAgua[indice] === 'true';
+
+            return Imagen.create({ 
+                imagen: imgBase64, // Guarda la cadena comprimida ultra liviana directamente en la base de datos
+                licencia: conLicencia, 
+                marcaDeAgua: conMarca ? 'Marca de agua' : null, 
+                id_publicacion: nuevaPublicacion.id 
+            });
         });
+        /* const nuevasImagenes = req.files.map((imagen, indice) => {
+            return Imagen.create({ imagen: stringBase64, licencia: licencias[indice], marcaDeAgua: marcasDeAgua[indice], id_publicacion: nuevaPublicacion.id });
+        }); */
         const listaEtiquetas = Array.isArray(etiquetas) ? etiquetas : [etiquetas];
         const nuevasEtiquetas = listaEtiquetas.map(e => {
             const etiquetasFiltradas = e.startsWith('#') ? e.split('#')[1].toLowerCase() : e.toLowerCase();
