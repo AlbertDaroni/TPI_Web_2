@@ -5,19 +5,16 @@ async function crear(req, res, next) {
         const id = req.session.userId;
         if (req.method === 'GET') return res.render('agregar', { id });
 
-        const { titulo, descripcion, licencias, marcasDeAgua, etiquetas } = req.body;
-        const imagenes = req.body['imagenes[]'] || []; 
-
-        console.log("Cantidad de imágenes en Base64:", imagenes ? imagenes.length : 0);
+        const { titulo, descripcion, licencias, marcasDeAgua, etiquetas, imagenes } = req.body;
 
         if (!titulo || !imagenes || etiquetas.length === 0 || imagenes.length === 0) { res.render('agregar', { error: 'Campos incompletos' }); }
         for (const licencia of licencias) { if (licencia === undefined) { res.render('agregar', { error: 'Campos incompletos' }); } }
         for (const etiqueta of etiquetas) { if (!etiqueta) { res.render('agregar', { error: 'Campos incompletos' }); } }
             
         const nuevaPublicacion = await Publicacion.create({ titulo: titulo, descripcion: descripcion, id_usuario: id });
-        const nuevasImagenes = imagenes.map((imgBase64, indice) => {
+        const nuevasImagenes = imagenes.map((url, indice) => {
             return Imagen.create({ 
-                imagen: imgBase64,
+                imagen: url,
                 licencia: licencias[indice], 
                 marcaDeAgua: marcasDeAgua[indice], 
                 id_publicacion: nuevaPublicacion.id 
@@ -33,7 +30,7 @@ async function crear(req, res, next) {
         });
 
         await Promise.all([...nuevasImagenes, ...nuevasEtiquetas]);
-        res.redirect('/');
+        res.sendStatus(200);
     } catch (error) { next(error); }
 }
 

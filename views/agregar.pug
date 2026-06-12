@@ -26,105 +26,113 @@ block content
             button(type="submit") Crear
 
     script.
+        script.
         const inputImagenes = document.getElementById('input-imagenes');
         const contenedorPrev = document.getElementById('contenedor-previsualizaciones');
-        const formulario = document.getElementById('form-crear-pub');
-
-        if (formulario) {
-            formulario.addEventListener('submit', async function(evento) {
-                evento.preventDefault();
-                
-                const btnSubmit = this.querySelector('button[type="submit"]');
-                btnSubmit.disabled = true;
-                btnSubmit.innerText = 'Subiendo... ⏳';
-
-                const inputFiles = document.getElementById('input-imagenes');
-                const arrayBase64Promesas = [];
-
-                // Reducir las fotos y generar las cadenas Base64 livianas
-                for (let i = 0; i < inputFiles.files.length; i++) {
-                    const archivoComprimido = await comprimirImagen(inputFiles.files[i]);
-                    
-                    const promesaBase64 = new Promise((resolve) => {
-                        const lector = new FileReader();
-                        lector.readAsDataURL(archivoComprimido);
-                        lector.onloadend = () => resolve(lector.result);
-                    });
-                    arrayBase64Promesas.push(promesaBase64);
-                }
-
-                const imagenesBase64 = await Promise.all(arrayBase64Promesas);
-                const formData = new FormData(this);
-                
-                // Eliminar los archivos pesados binarios que Multer no puede leer en Vercel
-                formData.delete('imagenes'); 
-
-                imagenesBase64.forEach(imgBase64 => { formData.append('imagenes[]', imgBase64); });
-
-                try {
-                    const res = await fetch('/publicacion/crear', {
-                        method: 'POST',
-                        body: formData
-                    });
-
-                    if (res.ok) {
-                        window.location.href = '/';
-                    } else {
-                        alert('Error al crear la publicación');
-                        btnSubmit.disabled = false;
-                        btnSubmit.innerText = 'Crear';
-                    }
-                } catch (err) {
-                    console.error(err);
-                    btnSubmit.disabled = false;
-                    btnSubmit.innerText = 'Crear';
-                }
-            });
-        }
+        const formCrearPub = document.getElementById('form-crear-pub');
+        
+        let archivosSeleccionados = [];
 
         inputImagenes.addEventListener('change', function() {
             contenedorPrev.innerHTML = '';
-            const archivos = this.files;
+            archivosSeleccionados = Array.from(this.files);
 
-            if (archivos.length > 5) {
+            if (archivosSeleccionados.length > 5) {
                 alert('Solo podés subir hasta 5 fotos');
                 this.value = '';
                 return;
             }
 
-            if (archivos.length > 0) {
-                Array.from(archivos).forEach((archivo, indice) => {
-                    const lector = new FileReader();
-
-                    lector.onload = function(evento) {
-                        const html = document.createElement('div');
-                        html.className = 'tarjeta-previsualizacion';
-
-                        html.innerHTML = `
-                            <div class="contenedor-prev-imagen">
-                                <img src="${evento.target.result}" alt="Previsualización" style="width: 80px; height: 80px; object-fit: cover;">
-                            </div>
-                            <div class="contenedor-prev-opciones">
-                                <h5>Configuración de la imagen #${indice + 1}</h5>
-                                <div class="opcion-grupo">
-                                    <label>Licencia</label>
-                                    <div class="radio-opciones">
-                                        <input type="radio" name="licencias[${indice}]" value="true"> Sí
-                                        <input type="radio" name="licencias[${indice}]" value="false" checked> No
-                                    </div>
-                                </div>
-                                <div class="opcion-grupo">
-                                    <label>Añadir Marca de Agua</label>
-                                    <input type="text" name="marcasDeAgua[${indice}]" placeholder="Escribí el texto...">
+            archivosSeleccionados.forEach((archivo, indice) => {
+                const lector = new FileReader();
+                lector.onload = function(evento) {
+                    const html = document.createElement('div');
+                    html.className = 'tarjeta-previsualizacion';
+                    html.innerHTML = `
+                        <div class="contenedor-prev-imagen">
+                            <img src="${evento.target.result}" alt="Previsualización" style="width: 80px; height: 80px; object-fit: cover;">
+                        </div>
+                        <div class="contenedor-prev-opciones">
+                            <h5>Configuración de la imagen #${indice + 1}</h5>
+                            <div class="opcion-grupo">
+                                <label>Licencia</label>
+                                <div class="radio-opciones">
+                                    <input type="radio" name="licencias[${indice}]" value="true"> Sí
+                                    <input type="radio" name="licencias[${indice}]" value="false" checked> No
                                 </div>
                             </div>
-                            <button type="button" onclick="eliminarImagen(this)">🗑️</button>
-                        `;
-                        contenedorPrev.appendChild(html);
-                    };
+                            <div class="opcion-grupo">
+                                <label>Añadir Marca de Agua</label>
+                                <input type="text" name="marcasDeAgua[${indice}]" placeholder="Escribí el texto...">
+                            </div>
+                        </div>
+                    `;
+                    contenedorPrev.appendChild(html);
+                };
+                lector.readAsDataURL(archivo);
+            });
+        });
 
-                    lector.readAsDataURL(archivo);
+        formCrearPub.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            if (archivosSeleccionados.length === 0) return alert('Debés cargar al menos una imagen');
+
+            // CLOUDINARY CONFIG: Reemplazá esto con tus datos de Cloudinary
+            const CLOUD_NAME = "dthkzpy1e"; 
+            const UPLOAD_PRESET = "imagenURL"; 
+
+            try {
+                const promesasSubida = archivosSeleccionados.map(archivo => {
+                    const formDataCloudinary = new FormData();
+                    formDataCloudinary.append('file', archivo);
+                    formDataCloudinary.append('upload_preset', UPLOAD_PRESET);
+
+                    return fetch(`https://cloudinary.com{CLOUD_NAME}/image/upload`, {
+                        method: 'POST',
+                        body: formDataCloudinary
+                    }).then(res => {
+                        if (!res.ok) throw new Error('Error al subir a Cloudinary');
+                        return res.json();
+                    });
                 });
+
+                const resultadosCloudinary = await Promise.all(promesasSubida);
+                const urlsImagenes = resultadosCloudinary.map(res => res.secure_url);
+
+                const formDataPropio = new FormData(formCrearPub);
+                const etiquetas = Array.from(formDataPropio.getAll('etiquetas[]'));
+                
+                const licencias = archivosSeleccionados.map((_, i) => {
+                    const radio = document.querySelector(`input[name="licencias[${i}]"]:checked`);
+                    return radio ? radio.value === 'true' : false;
+                });
+                const marcasDeAgua = archivosSeleccionados.map((_, i) => {
+                    const input = document.querySelector(`input[name="marcasDeAgua[${i}]"]`);
+                    return input ? input.value : "";
+                });
+
+                const payload = {
+                    titulo: formDataPropio.get('titulo'),
+                    descripcion: formDataPropio.get('descripcion'),
+                    etiquetas: etiquetas,
+                    imagenes: urlsImagenes,
+                    licencias: licencias,
+                    marcasDeAgua: marcasDeAgua
+                };
+
+                const respuestaBackend = await fetch('/publicacion/crear', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (respuestaBackend.ok) { window.location.href = '/'; }
+                else { alert('Hubo un error al guardar la publicación.'); }
+
+            } catch (error) {
+                console.error(error);
+                alert('Error en el proceso de carga de imágenes.');
             }
         });
 
@@ -132,9 +140,7 @@ block content
             const seccion_etiquetas = document.getElementById('seccion-etiquetas');
             const cantidad_actual = seccion_etiquetas.querySelectorAll('.fila-etiqueta').length;
             const contenedor = document.createElement('div');
-
             if (cantidad_actual > 4) return alert('Solo podés añadir hasta 5 etiquetas');
-
             contenedor.className = 'fila-etiqueta';
             contenedor.innerHTML = `
                 <input type="text" name="etiquetas[]" required>
@@ -143,37 +149,5 @@ block content
             seccion_etiquetas.appendChild(contenedor);
         }
 
-        function eliminarImagen(boton) { boton.parentElement.remove(); }
         function eliminarEtiqueta(boton) { boton.parentElement.remove(); }
-
-        // Función de compresión
-        function comprimirImagen(archivo) {
-            return new Promise((resolve) => {
-                const lector = new FileReader();
-                lector.readAsDataURL(archivo);
-                lector.onload = (evento) => {
-                    const img = new Image();
-                    img.src = evento.target.result;
-                    img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        const MAX_ANCHO = 800;
-                        let ancho = img.width;
-                        let alto = img.height;
-
-                        if (ancho > MAX_ANCHO) {
-                            alto *= MAX_ANCHO / ancho;
-                            ancho = MAX_ANCHO;
-                        }
-
-                        canvas.width = ancho;
-                        canvas.height = alto;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0, ancho, alto);
-
-                        canvas.toBlob((blob) => {
-                            resolve(new File([blob], archivo.name, { type: 'image/jpeg' }));
-                        }, 'image/jpeg', 0.6);
-                    };
-                };
-            });
-        }
+        function eliminarImagen(boton) { boton.parentElement.remove(); }
