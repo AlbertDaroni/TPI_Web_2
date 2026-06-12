@@ -20,6 +20,8 @@ const { Imagen, Mensaje, Usuario, Etiqueta, Favorito, Validador, Comentario, Val
 
 const app = express();
 
+app.set('trust proxy', 1);
+
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'pug');
